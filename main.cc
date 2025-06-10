@@ -1,84 +1,100 @@
 #include <print>
+#include <functional>
 
 #include "raylib-cpp.hpp"
 
 constexpr int WIDTH  = 1600;
-constexpr int HEIGHT = 900;
+constexpr int HEIGHT = 800;
+
+typedef std::function<float(float)> Interpolator;
 
 class Animation {
     bool m_active = false;
-
-protected:
     float m_t = 0;
-    float m_duration;
+    const float m_duration;
+    Interpolator m_interp;
 
 public:
-    Animation(float duration)
+    Animation(float duration, Interpolator interp)
         : m_duration(duration)
+        , m_interp(interp)
     { }
 
     void start() {
         m_active = true;
     }
 
+    void reset() {
+        m_active = false;
+        m_t = 0;
+    }
+
     [[nodiscard]] bool is_active() const {
         return m_active;
     }
 
-    float poll() {
+    [[nodiscard]] float peek() const {
+        return m_interp(m_t / m_duration);
+    }
+
+    float update(float dt) {
 
         if (m_active) {
+            m_t += dt;
+            // interpolation should happen before reset, as otherwise update()
+            // will briefly return 0, when time has reached duration
+            float x = peek();
 
-            float x =  interpolate();
-            m_t += GetFrameTime();
-
-            if (m_t > m_duration) {
-                m_t = 0;
-                m_active = false;
-            }
+            if (m_t > m_duration)
+                reset();
 
             return x;
 
         } else {
-            return 0;
+            return 1;
 
         }
     }
 
-protected:
-    [[nodiscard]] virtual float interpolate() const = 0;
-
 };
 
-class LinearAnimation : public Animation {
-public:
+[[nodiscard]] float interp_lin(float x) {
+    return x;
+}
 
-    LinearAnimation(float duration) : Animation(duration) { }
+[[nodiscard]] float interp_sin(float x) {
+    return sin((PI/2) * x);
+}
 
-protected:
-    [[nodiscard]] float interpolate() const {
-        return m_t / m_duration;
-    }
+[[nodiscard]] float interp_sq(float x) {
+    return pow(x, 2);
+}
 
-};
+[[nodiscard]] float interp_cub(float x) {
+    return pow(x, 3);
+}
 
-class SinAnimation : public LinearAnimation {
-    float m_sin_x;
+[[nodiscard]] float interp_ease_out_back(float x) {
+    float c1 = 1.70158;
+    float c3 = c1 + 1;
+    return 1 + c3 * pow(x-1, 3) + c1 * pow(x-1, 2);
+}
 
-public:
+static void animate_circle(Animation &anim, Color color, int offset) {
 
-    SinAnimation(float duration, float sin_x=PI*2)
-        : LinearAnimation(duration)
-        , m_sin_x(sin_x)
-    { }
+    int r = 25;
+    float linx = anim.update(GetFrameTime());
+    int pad = 200;
 
-protected:
-    [[nodiscard]] float interpolate() const {
-        return sin(m_sin_x * LinearAnimation::interpolate());
-    }
+    raylib::Vector2 start(pad+r, offset);
+    raylib::Vector2 end(WIDTH-pad-r, offset);
+    start.DrawLine(end, WHITE);
+    start.DrawCircle(5, WHITE);
+    end.DrawCircle(5, WHITE);
 
-};
-
+    raylib::Vector2 circ_lin(pad + r + (WIDTH-2*r-2*pad) * linx, offset);
+    circ_lin.DrawCircle(r, color);
+}
 
 
 
@@ -87,46 +103,31 @@ int main() {
     raylib::Window window(WIDTH, HEIGHT, "anim", FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
 
-    SinAnimation anim(1, PI/2);
+    Animation lina(3, interp_lin);
+    lina.start();
+
+    Animation sqa(3, interp_sq);
+    sqa.start();
+
+    Animation cua(3, interp_cub);
+    cua.start();
+
+    Animation sina(3, interp_sin);
+    sina.start();
+
+    Animation easa(3, interp_ease_out_back);
+    easa.start();
 
     while (!window.ShouldClose()) {
         BeginDrawing();
         {
-
             window.ClearBackground(BLACK);
 
-            float a = anim.poll();
-            int size = 100;
-            int size_diff = a * 100;
-            int outer_size = size + size_diff;
-
-            float speed = 2;
-            double interp = (sin(GetTime() * speed) + 1) / 2;
-
-            auto eps = 1e-2;
-            if (interp <= eps || 1 - interp <= eps) {
-                anim.start();
-            }
-
-            raylib::Rectangle outer(
-                (WIDTH-size) * interp - size_diff/2.0,
-                HEIGHT / 2.0 - outer_size / 2.0,
-                outer_size,
-                outer_size
-            );
-
-            Color c = PURPLE;
-            c.a = Lerp(200, 0, a);
-            outer.Draw(c);
-
-            raylib::Rectangle rect(
-                (WIDTH-size) * interp,
-                HEIGHT / 2.0 - size / 2.0,
-                size,
-                size
-            );
-            rect.Draw(BLUE);
-
+            animate_circle(lina, BLUE,   100);
+            animate_circle(sqa,  YELLOW, 200);
+            animate_circle(cua,  ORANGE, 300);
+            animate_circle(sina, RED,    400);
+            animate_circle(easa, PURPLE, 500);
 
         }
         EndDrawing();
