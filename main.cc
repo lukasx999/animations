@@ -1,5 +1,6 @@
 #include <print>
 #include <functional>
+#include <ranges>
 
 #include "raylib-cpp.hpp"
 
@@ -103,31 +104,28 @@ int main() {
     raylib::Window window(WIDTH, HEIGHT, "anim", FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
 
-    Animation lina(3, interp_lin);
-    lina.start();
-
-    Animation sqa(3, interp_sq);
-    sqa.start();
-
-    Animation cua(3, interp_cub);
-    cua.start();
-
-    Animation sina(3, interp_sin);
-    sina.start();
-
-    Animation easa(3, interp_ease_out_back);
-    easa.start();
-
+    std::array animations {
+        std::pair { Animation(3, interp_lin), BLUE },
+        std::pair { Animation(3, interp_sq), YELLOW },
+        std::pair { Animation(3, interp_cub), ORANGE },
+        std::pair { Animation(3, interp_sin), RED },
+        std::pair { Animation(3, interp_ease_out_back), PURPLE }
+    };
     while (!window.ShouldClose()) {
         BeginDrawing();
         {
             window.ClearBackground(BLACK);
 
-            animate_circle(lina, BLUE,   100);
-            animate_circle(sqa,  YELLOW, 200);
-            animate_circle(cua,  ORANGE, 300);
-            animate_circle(sina, RED,    400);
-            animate_circle(easa, PURPLE, 500);
+            if (raylib::Keyboard::IsKeyPressed(KEY_J)) {
+                for (auto &anim : animations) {
+                    anim.first.start();
+                }
+            }
+
+            for (auto &&[idx, pair] : std::views::enumerate(animations)) {
+                auto &[anim, color] = pair;
+                animate_circle(anim, color, (idx+1)*100);
+            }
 
         }
         EndDrawing();
