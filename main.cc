@@ -12,12 +12,12 @@ static constexpr auto HEIGHT = 900;
 
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
-    using F = std::function<float(float)>;
+    using Fn = std::function<float(float)>;
 
     const T m_start;
     const T m_end;
     const double m_duration;
-    const F m_f;
+    const Fn m_fn;
     double m_start_time = get_time_secs();
 
 public:
@@ -29,11 +29,11 @@ public:
     : Interpolator(start, end, duration, [](float x) { return x; })
     { }
 
-    Interpolator(T start, T end, double duration, F f)
+    Interpolator(T start, T end, double duration, Fn f)
         : m_start(start)
         , m_end(end)
         , m_duration(duration)
-        , m_f(f)
+        , m_fn(f)
     { }
 
     void reset() {
@@ -49,7 +49,7 @@ public:
 
         double t = get_time_secs() - m_start_time;
         double x = t / m_duration;
-        return std::lerp(m_start, m_end, m_f(x));
+        return std::lerp(m_start, m_end, m_fn(x));
     }
 
     [[nodiscard]] operator T() const {
@@ -98,8 +98,9 @@ int main() {
 
     float width = 100, height = width;
     Interpolator<float> x(0, WIDTH-width*2, 1, easings::ease_in_out_cubic);
-    Interpolator<float> delta(0, 50, 0.3, easings::ease_out_expo);
-    bool z = false;
+    Interpolator<float> delta(0, 50, 0.5, easings::ease_out_expo);
+    Interpolator<float> delta_color(0, 1.0f, 0.3, easings::squared);
+    bool start = false;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -112,12 +113,16 @@ int main() {
             DrawRectangleRec(rect, BLUE);
 
             if (x.is_done()) {
-                if (!z) {
+
+                if (!start) {
                     delta.reset();
-                    z = true;
+                    delta_color.reset();
+                    start = true;
                 }
+
                 Rectangle rect { x-delta, y-delta, width+delta*2, height+delta*2 };
-                DrawRectangleRec(rect, RED);
+                auto color = ColorLerp(RED, BLACK, delta_color);
+                DrawRectangleRec(rect, color);
             }
 
         }
