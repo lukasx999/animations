@@ -135,11 +135,18 @@ class Animation {
         { 2, 3, 2, easings::ease_in_out_cubic },
     };
     std::vector<Interpolator<float>>::iterator m_it;
+    double m_start_time;
 
 public:
     Animation()
     : m_it(m_kfs.begin())
     { }
+
+    void start() {
+    }
+
+    void reset() {
+    }
 
     float get() {
         auto &interp = *m_it;
