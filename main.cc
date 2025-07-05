@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include <raylib.h>
+#include <utility>
 
 #define PRINT(x) std::println("{}: {}", #x, x);
 
@@ -12,13 +13,17 @@ static constexpr auto HEIGHT = 900;
 
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
-    using Fn = std::function<float(float)>;
-
+    using InterpFn = std::function<float(float)>;
     const T m_start;
     const T m_end;
     const double m_duration;
-    const Fn m_fn;
-    double m_start_time = get_time_secs();
+    const InterpFn m_fn;
+    double m_start_time = 0.0f;
+    enum class State {
+        Idle,
+        Running,
+        Done,
+    } mutable m_state = State::Idle;
 
 public:
     Interpolator() : Interpolator(0.0f, 1.0f) { }
@@ -29,34 +34,64 @@ public:
     : Interpolator(start, end, duration, [](float x) { return x; })
     { }
 
-    Interpolator(T start, T end, double duration, Fn f)
+    Interpolator(T start, T end, double duration, InterpFn f)
         : m_start(start)
         , m_end(end)
         , m_duration(duration)
         , m_fn(f)
     { }
 
-    void reset() {
+    void start() {
+        m_state = State::Running;
         m_start_time = get_time_secs();
     }
 
-    [[nodiscard]] bool is_done() const {
-        return get_time_secs() >= m_start_time + m_duration;
+    void reset() {
+        m_state = State::Idle;
     }
 
-    [[nodiscard]] T get() const {
-        if (is_done()) return m_end;
-
-        double t = get_time_secs() - m_start_time;
-        double x = t / m_duration;
-        return std::lerp(m_start, m_end, m_fn(x));
+    [[nodiscard]] bool is_done() const {
+        return m_state == State::Done;
     }
 
     [[nodiscard]] operator T() const {
         return get();
     }
 
+    [[nodiscard]] T get() const {
+
+        switch (m_state) {
+
+            case State::Running: {
+
+                if (is_finished()) {
+                    m_state = State::Done;
+                    return get();
+                }
+
+                double t = get_time_secs() - m_start_time;
+                double x = t / m_duration;
+                return std::lerp(m_start, m_end, m_fn(x));
+            } break;
+
+            case State::Idle:
+                return m_start;
+                break;
+
+            case State::Done:
+                return m_end;
+                break;
+        }
+
+        std::unreachable();
+
+    }
+
 private:
+    [[nodiscard]] bool is_finished() const {
+        return get_time_secs() >= m_start_time + m_duration;
+    }
+
     [[nodiscard]] static double get_time_secs() {
         namespace chrono = std::chrono;
 
@@ -100,6 +135,7 @@ int main() {
     Interpolator<float> x(0, WIDTH-width*2, 1, easings::ease_in_out_cubic);
     Interpolator<float> delta(0, 50, 0.5, easings::ease_out_expo);
     Interpolator<float> delta_color(0, 1.0f, 0.3, easings::squared);
+    x.start();
     bool start = false;
 
     while (!WindowShouldClose()) {
@@ -115,8 +151,8 @@ int main() {
             if (x.is_done()) {
 
                 if (!start) {
-                    delta.reset();
-                    delta_color.reset();
+                    delta.start();
+                    delta_color.start();
                     start = true;
                 }
 
