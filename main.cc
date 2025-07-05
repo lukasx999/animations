@@ -21,13 +21,9 @@ class Interpolator {
     double m_start_time = get_time_secs();
 
 public:
-    Interpolator()
-    : Interpolator(0.0f, 1.0f)
-    { }
+    Interpolator() : Interpolator(0.0f, 1.0f) { }
 
-    Interpolator(T start, T end)
-    : Interpolator(start, end, 1.0f)
-    { }
+    Interpolator(T start, T end) : Interpolator(start, end, 1.0f) { }
 
     Interpolator(T start, T end, double duration)
     : Interpolator(start, end, duration, [](float x) { return x; })
@@ -51,7 +47,8 @@ public:
     [[nodiscard]] T get() const {
         if (is_done()) return m_end;
 
-        auto x = (get_time_secs() - m_start_time) / m_duration;
+        double t = get_time_secs() - m_start_time;
+        double x = t / m_duration;
         return std::lerp(m_start, m_end, m_f(x));
     }
 
@@ -72,7 +69,7 @@ private:
 
 namespace easings {
 
-[[nodiscard]] static float id(float x) {
+[[nodiscard]] static float linear(float x) {
     return x;
 }
 
@@ -96,25 +93,32 @@ namespace easings {
 
 int main() {
 
-    InitWindow(WIDTH, HEIGHT, "raylib [core] example - basic window");
+    InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(60);
 
     float width = 100, height = width;
-    Interpolator<float> x(0, WIDTH-width, 2, easings::ease_in_out_cubic);
+    Interpolator<float> x(0, WIDTH-width*2, 1, easings::ease_in_out_cubic);
+    Interpolator<float> delta(0, 50, 0.3, easings::ease_out_expo);
+    bool z = false;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
 
-            // float x = std::lerp(0, WIDTH-width, fmod(GetTime(), 1));
-            if (x.is_done()) {
-                x.reset();
-            }
-            float y = 0;
+            float y = HEIGHT/2.0f - height/2.0f;
 
             Rectangle rect { x, y, width, height };
             DrawRectangleRec(rect, BLUE);
+
+            if (x.is_done()) {
+                if (!z) {
+                    delta.reset();
+                    z = true;
+                }
+                Rectangle rect { x-delta, y-delta, width+delta*2, height+delta*2 };
+                DrawRectangleRec(rect, RED);
+            }
 
         }
         EndDrawing();
