@@ -11,6 +11,30 @@
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
 
+namespace easings {
+
+[[nodiscard]] static float linear(float x) {
+    return x;
+}
+
+[[nodiscard]] static float squared(float x) {
+    return std::pow(x, 2);
+}
+
+[[nodiscard]] static float cubed(float x) {
+    return std::pow(x, 3);
+}
+
+[[nodiscard]] static float ease_out_expo(float x) {
+    return x == 1 ? 1 : 1 - std::pow(2, -10 * x);
+}
+
+[[nodiscard]] static float ease_in_out_cubic(float x) {
+    return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
+}
+
+}
+
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
@@ -26,7 +50,9 @@ class Interpolator {
     } mutable m_state = State::Idle;
 
 public:
-    Interpolator() : Interpolator(0.0f, 1.0f) { }
+    Interpolator() : Interpolator(1.0f) { }
+
+    explicit Interpolator(T end) : Interpolator(0.0f, end) { }
 
     Interpolator(T start, T end) : Interpolator(start, end, 1.0f) { }
 
@@ -102,29 +128,33 @@ private:
 
 };
 
-namespace easings {
+class Animation {
+    std::vector<Interpolator<float>> m_kfs {
+        { 0, 1, 0.3, easings::cubed },
+        { 1, 2, 1, easings::ease_out_expo },
+        { 2, 3, 2, easings::ease_in_out_cubic },
+    };
+    std::vector<Interpolator<float>>::iterator m_it;
 
-[[nodiscard]] static float linear(float x) {
-    return x;
-}
+public:
+    Animation()
+    : m_it(m_kfs.begin())
+    { }
 
-[[nodiscard]] static float squared(float x) {
-    return std::pow(x, 2);
-}
+    float get() {
+        auto &interp = *m_it;
+        interp.start();
 
-[[nodiscard]] static float cubed(float x) {
-    return std::pow(x, 3);
-}
+        if (interp.is_done()) {
+            interp.reset();
+            m_it++;
+        }
 
-[[nodiscard]] static float ease_out_expo(float x) {
-    return x == 1 ? 1 : 1 - std::pow(2, -10 * x);
-}
+        return interp;
+    }
 
-[[nodiscard]] static float ease_in_out_cubic(float x) {
-    return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
-}
+};
 
-}
 
 int main() {
 
