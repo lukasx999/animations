@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cassert>
 #include <functional>
 #include <chrono>
 #include <cmath>
+#include <numeric>
 #include <utility>
 
 namespace anim {
@@ -35,32 +37,16 @@ namespace interpolators {
 
 }
 
-[[nodiscard]] inline double get_time_secs() {
-    namespace chrono = std::chrono;
-
-    auto now = chrono::steady_clock::now();
-    auto time = now.time_since_epoch();
-    return chrono::duration_cast<chrono::duration<double>>(time).count();
-}
-
-// TODO: pause/resume semantics?
 
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
-    double m_start_time = 0.0f;
-    enum class State {
-        Idle,
-        Running,
-        Done,
-    } mutable m_state = State::Idle;
+    const InterpFn m_fn;
 
 public:
     const T m_start;
     const T m_end;
-    // const double m_duration;
-    double m_duration;
-    const InterpFn m_fn;
+    const double m_duration;
 
     Interpolator() : Interpolator(1.0f) { }
 
@@ -77,6 +63,41 @@ public:
         , m_end(end)
         , m_duration(duration)
         , m_fn(f)
+    { }
+
+    [[nodiscard]] operator T() const {
+        return get();
+    }
+
+    [[nodiscard]] T get(double t) const {
+        double x = t / m_duration;
+        // TODO: custom lerp for arbitrary types
+        return std::lerp(m_start, m_end, m_fn(x));
+    }
+
+};
+
+
+
+
+
+
+// TODO: pause/resume semantics?
+
+template <typename T> requires std::is_arithmetic_v<T>
+class Animation {
+    const std::vector<Interpolator<T>> m_interps;
+    double m_start_time = 0.0f;
+    enum class State {
+        Idle,
+        Running,
+        Done,
+    };
+    mutable State m_state = State::Idle;
+
+public:
+    Animation(std::initializer_list<Interpolator<T>> interps)
+    : m_interps(interps)
     { }
 
     void start() {
@@ -97,47 +118,73 @@ public:
         return m_state == State::Done;
     }
 
-    [[nodiscard]] operator T() const {
-        return get();
-    }
-
-    [[nodiscard]] T get(double t) const {
-        double x = t / m_duration;
-        // TODO: custom lerp for arbitrary types
-        return std::lerp(m_start, m_end, m_fn(x));
-    }
-
     [[nodiscard]] T get() const {
 
         switch (m_state) {
 
             case State::Running: {
-
                 if (has_ended()) {
                     m_state = State::Done;
                     return get();
                 }
 
-                double t = get_time_secs() - m_start_time;
-                return get(t);
+                return get_running();
             } break;
 
             case State::Idle:
-                return m_start;
+                return m_interps[0].m_start;
                 break;
 
             case State::Done:
-                return m_end;
+                return m_interps[m_interps.size()-1].m_end;
                 break;
         }
 
         std::unreachable();
+    }
 
+    [[nodiscard]] operator T() const {
+        return get();
+    }
+
+    [[nodiscard]] double get_duration() const {
+
+        auto acc_fn = [](double acc, const anim::Interpolator<float> &b) {
+            return acc + b.m_duration;
+        };
+
+        return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
     }
 
 private:
+    [[nodiscard]] T get_running() const {
+
+        double t = get_time_secs() - m_start_time;
+        double time_to_interp = 0.0f;
+
+        auto find_fn = [&](const Interpolator<float> &interp) {
+            time_to_interp += interp.m_duration;
+            bool is_current = t <= time_to_interp;
+            return is_current;
+        };
+
+        auto current = std::ranges::find_if(m_interps, find_fn);
+        assert(current != m_interps.end());
+
+        double diff = time_to_interp - t;
+        return current->get(current->m_duration - diff);
+    }
+
     [[nodiscard]] bool has_ended() const {
-        return get_time_secs() >= m_start_time + m_duration;
+        return get_time_secs() >= m_start_time + get_duration();
+    }
+
+    [[nodiscard]] static inline double get_time_secs() {
+        namespace chrono = std::chrono;
+
+        auto now = chrono::steady_clock::now();
+        auto time = now.time_since_epoch();
+        return chrono::duration_cast<chrono::duration<double>>(time).count();
     }
 
 };

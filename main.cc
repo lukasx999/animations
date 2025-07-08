@@ -1,3 +1,4 @@
+#include <numeric>
 #include <print>
 #include <functional>
 #include <chrono>
@@ -14,66 +15,7 @@
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
 
-// TODO: remove state/start/reset from interpolator and add it to animation instead
-class Animation {
-    struct Keyframe {
-        float diff;
-        double duration;
-        std::function<float(float)> interp_fn;
-    };
-    std::vector<anim::Interpolator<float>> m_interpolators;
-    std::vector<anim::Interpolator<float>>::iterator m_it;
-    double m_start_time = 0.0f;
 
-public:
-    Animation(std::initializer_list<anim::Interpolator<float>> interps)
-        : m_interpolators(interps)
-        , m_it(m_interpolators.begin())
-    { }
-
-    Animation(float start, std::initializer_list<Keyframe> kfs) {
-
-        float last = start;
-
-        for (auto &kf : kfs) {
-            m_interpolators.emplace_back(last, last+kf.diff, kf.duration, kf.interp_fn);
-            last += kf.diff;
-        }
-
-    };
-
-    void start() {
-        m_start_time = anim::get_time_secs();
-    }
-
-    void reset() {
-        // TODO:
-    }
-
-    float get() {
-
-        double time = anim::get_time_secs() - m_start_time;
-        double acc = 0.0f;
-
-        for (auto &interp : m_interpolators) {
-            double duration = interp.m_duration;
-            acc += interp.m_duration;
-
-            if (time <= acc) {
-                double diff = acc - time;
-                return interp.get(duration - diff);
-            }
-
-        }
-
-        return m_interpolators[m_interpolators.size()-1].m_end;
-    }
-
-    operator float() {
-        return get();
-    }
-
-};
 
 int main() {
 
@@ -82,13 +24,10 @@ int main() {
 
     float radius = 50;
 
-    Animation anim_x {
-        50,
-        {
-            { 500, 2, anim::interpolators::ease_out_expo },
-            { 500, 2, anim::interpolators::squared },
-            { 500, 2, anim::interpolators::ease_in_out_cubic },
-        }
+    anim::Animation<float> anim_x {
+        { 0, 500, 1, anim::interpolators::ease_out_expo },
+        { 500, WIDTH/2.0f, 2, anim::interpolators::squared },
+        { WIDTH/2.0f, WIDTH-radius, 2, anim::interpolators::ease_in_out_cubic },
     };
 
     anim_x.start();
@@ -110,48 +49,3 @@ int main() {
 
     return EXIT_SUCCESS;
 }
-
-
-// int main() {
-//
-//     InitWindow(WIDTH, HEIGHT, "animations");
-//     SetTargetFPS(60);
-//
-//     float width = 100, height = width;
-//     Interpolator<float> x(0, WIDTH-width*2, 1, easings::ease_in_out_cubic);
-//     Interpolator<float> delta(0, 50, 0.5, easings::ease_out_expo);
-//     Interpolator<float> delta_color(0, 1.0f, 0.3, easings::squared);
-//     x.start();
-//     bool start = false;
-//
-//     while (!WindowShouldClose()) {
-//         BeginDrawing();
-//         {
-//             ClearBackground(BLACK);
-//
-//             float y = HEIGHT/2.0f - height/2.0f;
-//
-//             Rectangle rect { x, y, width, height };
-//             DrawRectangleRec(rect, BLUE);
-//
-//             if (x.is_done()) {
-//
-//                 if (!start) {
-//                     delta.start();
-//                     delta_color.start();
-//                     start = true;
-//                 }
-//
-//                 Rectangle rect { x-delta, y-delta, width+delta*2, height+delta*2 };
-//                 auto color = ColorLerp(RED, BLACK, delta_color);
-//                 DrawRectangleRec(rect, color);
-//             }
-//
-//         }
-//         EndDrawing();
-//     }
-//
-//     CloseWindow();
-//
-//     return EXIT_SUCCESS;
-// }
