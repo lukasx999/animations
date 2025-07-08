@@ -24,24 +24,31 @@ int main() {
 
     float radius = 50;
 
-    anim::Animation<float> anim_x {
-        { 0, 500, 1, anim::interpolators::ease_out_expo },
-        { 500, WIDTH/2.0f, 2, anim::interpolators::squared },
-        { WIDTH/2.0f, WIDTH-radius, 2, anim::interpolators::ease_in_out_cubic },
+    float offset = 300;
+
+    float start = HEIGHT/2.0f-offset;
+    float end = HEIGHT/2.0f+offset;
+    anim::Animation<float> y1 {
+        { start, end, 3, anim::interpolators::ease_in_out_back },
     };
 
-    anim_x.start();
+    y1.start();
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
-            DrawText(std::format("{}", anim_x.get_time()).c_str(), 0, 0, 50, WHITE);
-            DrawText(std::format("{}", anim_x.is_running()).c_str(), 0, 50, 50, WHITE);
+            DrawText(std::format("{}", y1.get_time()).c_str(), 0, 0, 50, WHITE);
+            DrawText(std::format("{}", y1.is_running()).c_str(), 0, 50, 50, WHITE);
 
+            float x = 500;
+            DrawLineEx({x, start}, {x, end}, 10, GRAY);
             if (!IsKeyDown(KEY_J)) {
-                DrawCircleV({anim_x, HEIGHT/2.0f-radius/2.0f}, radius, BLUE);
+                DrawCircleV({x, y1}, radius, BLUE);
             }
+
+            if (IsKeyPressed(KEY_K))
+                y1.start();
 
         }
         EndDrawing();

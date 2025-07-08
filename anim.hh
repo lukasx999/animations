@@ -35,6 +35,15 @@ namespace interpolators {
     return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
 }
 
+[[nodiscard, maybe_unused]] static float ease_in_out_back(float x) {
+    float c1 = 1.70158;
+    float c2 = c1 * 1.525;
+
+    return x < 0.5
+    ? (std::pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
+    : (std::pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
+}
+
 }
 
 template <typename T> requires std::is_arithmetic_v<T>
