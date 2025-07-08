@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <algorithm>
+#include <ranges>
 #include <functional>
 #include <chrono>
 #include <cmath>
@@ -47,8 +49,20 @@ namespace interpolators {
 
 
 
+template <typename T>
+[[nodiscard]] inline constexpr T lerp(T, T, float) = delete;
 
 template <typename T> requires std::is_arithmetic_v<T>
+[[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
+    return start + x * (end - start);
+}
+
+template <typename T>
+concept Interpolatable = requires (T start, T end, float x) {
+    lerp(start, end, x);
+};
+
+template <Interpolatable T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
     const InterpFn m_fn;
@@ -79,8 +93,7 @@ public:
 
     [[nodiscard]] T get(double t) const {
         double x = t / m_duration;
-        // TODO: custom lerp for arbitrary types
-        return std::lerp(m_start, m_end, m_fn(x));
+        return anim::lerp(m_start, m_end, m_fn(x));
     }
 
 };
@@ -92,7 +105,7 @@ public:
 
 // TODO: pause/resume semantics?
 
-template <typename T> requires std::is_arithmetic_v<T>
+template <Interpolatable T>
 class Animation {
     const std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
@@ -114,6 +127,14 @@ public:
         m_start_time = 0.0f;
     }
 
+    [[nodiscard]] bool is_stopped() const {
+        return m_state == State::Stopped;
+    }
+
+    [[nodiscard]] bool is_running() const {
+        return m_state == State::Running;
+    }
+
     [[nodiscard]] bool is_done() const {
         return get_time() >= get_duration();
     }
@@ -130,7 +151,7 @@ public:
 
     [[nodiscard]] double get_duration() const {
 
-        auto acc_fn = [](double acc, const anim::Interpolator<float> &interp) {
+        auto acc_fn = [](double acc, const anim::Interpolator<T> &interp) {
             return acc + interp.m_duration;
         };
 
@@ -151,7 +172,7 @@ private:
         double t = get_time();
         double time_to_interp = 0.0f;
 
-        auto find_fn = [&](const Interpolator<float> &interp) {
+        auto find_fn = [&](const Interpolator<T> &interp) {
             time_to_interp += interp.m_duration;
             bool is_current = t <= time_to_interp;
             return is_current;
@@ -170,6 +191,32 @@ private:
         auto now = chrono::steady_clock::now();
         auto time = now.time_since_epoch();
         return chrono::duration_cast<chrono::duration<double>>(time).count();
+    }
+
+};
+
+
+
+
+
+// TODO:
+class AnimationBatch {
+    std::vector<Animation<float>> m_anims;
+
+public:
+    AnimationBatch(std::initializer_list<Animation<float>> anims)
+    : m_anims(anims)
+    { }
+
+    [[nodiscard]] double get_duration() const {
+
+        auto longest = std::ranges::max_element(m_anims, [](const anim::Animation<float> &a, const anim::Animation<float> &b) {
+            return b.get_duration() > a.get_duration();
+        });
+
+        assert(longest != m_anims.end());
+
+        return longest->get_duration();
     }
 
 };
