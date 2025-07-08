@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <algorithm>
-#include <ranges>
 #include <functional>
 #include <chrono>
 #include <cmath>
@@ -50,7 +49,7 @@ namespace interpolators {
 
 
 template <typename T>
-[[nodiscard]] inline constexpr T lerp(T, T, float) = delete;
+T lerp(T, T, float) = delete;
 
 template <typename T> requires std::is_arithmetic_v<T>
 [[nodiscard]] inline constexpr T lerp(T start, T end, float x) {

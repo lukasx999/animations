@@ -22,7 +22,7 @@ template <>
     return ColorLerp(start, end, x);
 }
 
-int main2() {
+int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
@@ -65,7 +65,7 @@ int main2() {
 
 
 
-int main() {
+int main2() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(60);
