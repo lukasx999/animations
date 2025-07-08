@@ -28,27 +28,28 @@ int main() {
 
     float start = HEIGHT/2.0f-offset;
     float end = HEIGHT/2.0f+offset;
+
     anim::Animation<float> y1 {
         { start, end, 3, anim::interpolators::ease_in_out_back },
     };
-
-    y1.start();
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
-            DrawText(std::format("{}", y1.get_time()).c_str(), 0, 0, 50, WHITE);
-            DrawText(std::format("{}", y1.is_running()).c_str(), 0, 50, 50, WHITE);
 
             float x = 500;
             DrawLineEx({x, start}, {x, end}, 10, GRAY);
+
             if (!IsKeyDown(KEY_J)) {
                 DrawCircleV({x, y1}, radius, BLUE);
             }
 
             if (IsKeyPressed(KEY_K))
                 y1.start();
+
+            if (IsKeyPressed(KEY_O))
+                y1.reset();
 
         }
         EndDrawing();

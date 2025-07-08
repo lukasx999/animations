@@ -5,13 +5,12 @@
 #include <chrono>
 #include <cmath>
 #include <numeric>
-#include <utility>
 
 namespace anim {
 
 namespace interpolators {
 
-[[nodiscard, maybe_unused]] static float step([[maybe_unused]] float x) {
+[[nodiscard, maybe_unused]] static float step(float) {
     return 1.0f;
 }
 
@@ -46,6 +45,9 @@ namespace interpolators {
 
 }
 
+
+
+
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
@@ -57,20 +59,18 @@ public:
     const double m_duration;
 
     Interpolator() : Interpolator(1.0f) { }
-
     explicit Interpolator(T end) : Interpolator(0.0f, end) { }
-
     Interpolator(T start, T end) : Interpolator(start, end, 1.0f) { }
 
     Interpolator(T start, T end, double duration)
     : Interpolator(start, end, duration, [](float x) { return x; })
     { }
 
-    Interpolator(T start, T end, double duration, InterpFn f)
+    Interpolator(T start, T end, double duration, InterpFn fn)
         : m_start(start)
         , m_end(end)
         , m_duration(duration)
-        , m_fn(f)
+        , m_fn(fn)
     { }
 
     [[nodiscard]] operator T() const {
@@ -85,18 +85,18 @@ public:
 
 };
 
+
+
+
+
+
 // TODO: pause/resume semantics?
 
 template <typename T> requires std::is_arithmetic_v<T>
 class Animation {
     const std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
-    enum class State {
-        Idle,
-        Running,
-        Done,
-    };
-    mutable State m_state = State::Idle;
+    enum class State { Stopped, Running } m_state = State::Stopped;
 
 public:
     Animation(std::initializer_list<Interpolator<T>> interps)
@@ -109,42 +109,22 @@ public:
     }
 
     void reset() {
-        m_state = State::Idle;
+        m_state = State::Stopped;
         m_start_time = 0.0f;
     }
 
-    [[nodiscard]] bool is_running() const {
-        return m_state == State::Running;
-    }
-
     [[nodiscard]] bool is_done() const {
-        return m_state == State::Done;
+        return get_time() >= get_duration();
     }
 
     [[nodiscard]] T get() const {
-
         switch (m_state) {
+            case State::Running:
+                return is_done() ? m_interps.back().m_end : get_running();
 
-            case State::Running: {
-                if (has_ended()) {
-                    // TODO: refactor this
-                    m_state = State::Done;
-                    return get();
-                }
-
-                return get_running();
-            } break;
-
-            case State::Idle:
-                return m_interps[0].m_start;
-                break;
-
-            case State::Done:
-                return m_interps[m_interps.size()-1].m_end;
-                break;
+            case State::Stopped:
+                return m_interps.front().m_start;
         }
-
-        std::unreachable();
     }
 
     [[nodiscard]] double get_duration() const {
@@ -156,15 +136,15 @@ public:
         return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
     }
 
-    [[nodiscard]] double get_time() const {
-        return get_time_secs() - m_start_time;
-    }
-
     [[nodiscard]] operator T() const {
         return get();
     }
 
 private:
+    [[nodiscard]] double get_time() const {
+        return get_time_secs() - m_start_time;
+    }
+
     [[nodiscard]] T get_running() const {
 
         double t = get_time();
@@ -181,10 +161,6 @@ private:
 
         double diff = time_to_interp - t;
         return current->get(current->m_duration - diff);
-    }
-
-    [[nodiscard]] bool has_ended() const {
-        return get_time() >= get_duration();
     }
 
     [[nodiscard]] static inline double get_time_secs() {
