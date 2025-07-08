@@ -86,7 +86,7 @@ int main() {
         50,
         {
             { 500, 2, anim::interpolators::ease_out_expo },
-            { 500, 2, anim::interpolators::cubed },
+            { 500, 2, anim::interpolators::squared },
             { 500, 2, anim::interpolators::ease_in_out_cubic },
         }
     };
