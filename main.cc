@@ -14,34 +14,36 @@
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
 
-
+// TODO: remove state/start/reset from interpolator and add it to animation instead
 class Animation {
     struct Keyframe {
         float diff;
         double duration;
         std::function<float(float)> interp_fn;
     };
-    std::vector<Interpolator<float>> m_interpolators;
-    std::vector<Interpolator<float>>::iterator m_it;
+    std::vector<anim::Interpolator<float>> m_interpolators;
+    std::vector<anim::Interpolator<float>>::iterator m_it;
     double m_start_time = 0.0f;
 
 public:
-    Animation(std::initializer_list<Interpolator<float>> interps)
+    Animation(std::initializer_list<anim::Interpolator<float>> interps)
         : m_interpolators(interps)
         , m_it(m_interpolators.begin())
     { }
 
     Animation(float start, std::initializer_list<Keyframe> kfs) {
+
         float last = start;
+
         for (auto &kf : kfs) {
             m_interpolators.emplace_back(last, last+kf.diff, kf.duration, kf.interp_fn);
             last += kf.diff;
         }
+
     };
 
     void start() {
-        m_start_time = get_time_secs();
-        // m_it->start();
+        m_start_time = anim::get_time_secs();
     }
 
     void reset() {
@@ -50,7 +52,7 @@ public:
 
     float get() {
 
-        double time = get_time_secs() - m_start_time;
+        double time = anim::get_time_secs() - m_start_time;
         double acc = 0.0f;
 
         for (auto &interp : m_interpolators) {
@@ -81,13 +83,14 @@ int main() {
     float radius = 50;
 
     Animation anim_x {
-        0,
+        50,
         {
-            { 200, 2, easings::ease_out_expo },
-            { 200, 2, easings::cubed },
-            { 200, 2, easings::ease_in_out_cubic },
+            { 500, 2, anim::interpolators::ease_out_expo },
+            { 500, 2, anim::interpolators::cubed },
+            { 500, 2, anim::interpolators::ease_in_out_cubic },
         }
     };
+
     anim_x.start();
 
     while (!WindowShouldClose()) {

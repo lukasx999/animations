@@ -5,7 +5,9 @@
 #include <cmath>
 #include <utility>
 
-namespace easings {
+namespace anim {
+
+namespace interpolators {
 
 [[nodiscard, maybe_unused]] static float step([[maybe_unused]] float x) {
     return 1.0f;
@@ -139,3 +141,5 @@ private:
     }
 
 };
+
+}
