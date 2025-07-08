@@ -37,7 +37,6 @@ namespace interpolators {
 
 }
 
-
 template <typename T> requires std::is_arithmetic_v<T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
@@ -76,11 +75,6 @@ public:
     }
 
 };
-
-
-
-
-
 
 // TODO: pause/resume semantics?
 
@@ -124,6 +118,7 @@ public:
 
             case State::Running: {
                 if (has_ended()) {
+                    // TODO: refactor this
                     m_state = State::Done;
                     return get();
                 }
@@ -143,10 +138,6 @@ public:
         std::unreachable();
     }
 
-    [[nodiscard]] operator T() const {
-        return get();
-    }
-
     [[nodiscard]] double get_duration() const {
 
         auto acc_fn = [](double acc, const anim::Interpolator<float> &b) {
@@ -156,10 +147,18 @@ public:
         return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
     }
 
+    [[nodiscard]] double get_time() const {
+        return get_time_secs() - m_start_time;
+    }
+
+    [[nodiscard]] operator T() const {
+        return get();
+    }
+
 private:
     [[nodiscard]] T get_running() const {
 
-        double t = get_time_secs() - m_start_time;
+        double t = get_time();
         double time_to_interp = 0.0f;
 
         auto find_fn = [&](const Interpolator<float> &interp) {
@@ -176,7 +175,7 @@ private:
     }
 
     [[nodiscard]] bool has_ended() const {
-        return get_time_secs() >= m_start_time + get_duration();
+        return get_time() >= get_duration();
     }
 
     [[nodiscard]] static inline double get_time_secs() {

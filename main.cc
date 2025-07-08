@@ -36,6 +36,8 @@ int main() {
         BeginDrawing();
         {
             ClearBackground(BLACK);
+            DrawText(std::format("{}", anim_x.get_time()).c_str(), 0, 0, 50, WHITE);
+            DrawText(std::format("{}", anim_x.is_running()).c_str(), 0, 50, 50, WHITE);
 
             if (!IsKeyDown(KEY_J)) {
                 DrawCircleV({anim_x, HEIGHT/2.0f-radius/2.0f}, radius, BLUE);
