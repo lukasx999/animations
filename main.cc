@@ -1,9 +1,4 @@
-#include <numeric>
 #include <print>
-#include <functional>
-#include <chrono>
-#include <cmath>
-#include <utility>
 
 #include <raylib.h>
 #include <raymath.h>

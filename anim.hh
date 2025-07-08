@@ -10,31 +10,31 @@ namespace anim {
 
 namespace interpolators {
 
-[[nodiscard, maybe_unused]] static float step(float) {
+[[nodiscard]] inline constexpr float step(float) {
     return 1.0f;
 }
 
-[[nodiscard, maybe_unused]] static float linear(float x) {
+[[nodiscard]] inline constexpr float linear(float x) {
     return x;
 }
 
-[[nodiscard, maybe_unused]] static float squared(float x) {
+[[nodiscard]] inline constexpr float squared(float x) {
     return std::pow(x, 2);
 }
 
-[[nodiscard, maybe_unused]] static float cubed(float x) {
+[[nodiscard]] inline constexpr float cubed(float x) {
     return std::pow(x, 3);
 }
 
-[[nodiscard, maybe_unused]] static float ease_out_expo(float x) {
+[[nodiscard]] inline constexpr float ease_out_expo(float x) {
     return x == 1 ? 1 : 1 - std::pow(2, -10 * x);
 }
 
-[[nodiscard, maybe_unused]] static float ease_in_out_cubic(float x) {
+[[nodiscard]] inline constexpr float ease_in_out_cubic(float x) {
     return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
 }
 
-[[nodiscard, maybe_unused]] static float ease_in_out_back(float x) {
+[[nodiscard]] inline constexpr float ease_in_out_back(float x) {
     float c1 = 1.70158;
     float c2 = c1 * 1.525;
 
@@ -96,7 +96,8 @@ template <typename T> requires std::is_arithmetic_v<T>
 class Animation {
     const std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
-    enum class State { Stopped, Running } m_state = State::Stopped;
+    enum class State { Stopped, Running };
+    State m_state = State::Stopped;
 
 public:
     Animation(std::initializer_list<Interpolator<T>> interps)
@@ -129,8 +130,8 @@ public:
 
     [[nodiscard]] double get_duration() const {
 
-        auto acc_fn = [](double acc, const anim::Interpolator<float> &b) {
-            return acc + b.m_duration;
+        auto acc_fn = [](double acc, const anim::Interpolator<float> &interp) {
+            return acc + interp.m_duration;
         };
 
         return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
