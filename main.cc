@@ -30,7 +30,8 @@ int main() {
     float radius = 50;
 
     anim::Animation<float> rad {
-        { 0, radius, 2, anim::interpolators::squared },
+        { 0, radius, 1, anim::interpolators::squared },
+        { radius, 0, 1, anim::interpolators::squared },
     };
 
     anim::Animation<Color> col {

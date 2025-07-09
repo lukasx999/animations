@@ -49,7 +49,7 @@ namespace interpolators {
 
 
 template <typename T>
-T lerp(T, T, float) = delete;
+T lerp(T start, T end, float x) = delete;
 
 template <typename T> requires std::is_arithmetic_v<T>
 [[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
