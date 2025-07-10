@@ -77,13 +77,16 @@ int main() {
 
             DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
 
-            if (squares.is_done() && circles.is_done() && line.is_stopped()) {
-                line.start();
-            }
+            // if (squares.is_done() && circles.is_done() && line.is_stopped()) {
+            //     line.start();
+            // }
 
-            if (squares.is_done() && circles.is_stopped()) {
-                circles.start();
-            }
+            // if (squares.is_done() && circles.is_stopped()) {
+            //     circles.start();
+            // }
+
+            line.start_after({circles, squares});
+            circles.start_after({squares});
 
         }
         EndDrawing();

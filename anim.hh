@@ -274,6 +274,18 @@ public:
         return m_anims[idx];
     }
 
+    void start_after(std::initializer_list<const Batch<T>> batches) {
+        bool done = true;
+        for (auto &batch : batches) {
+            if (!batch.is_done())
+                done = false;
+        }
+
+        if (is_stopped() && done) {
+            start();
+        }
+    }
+
 private:
     [[nodiscard]] const Animation<T> &get_longest() const {
 
