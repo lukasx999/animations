@@ -50,7 +50,6 @@ namespace interpolators {
 
 
 
-// TODO: probably not a good idea, beacuse of generics
 class IAnimation {
 public:
     virtual void start() = 0;

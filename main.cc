@@ -1,7 +1,5 @@
 #include <print>
-#include <iostream>
 #include <ranges>
-#include <algorithm>
 
 #include <raylib.h>
 #include <raymath.h>
@@ -23,7 +21,7 @@ template <>
     return ColorLerp(start, end, x);
 }
 
-int main() {
+int main3() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
@@ -97,7 +95,7 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-int main3() {
+int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
