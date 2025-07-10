@@ -1,4 +1,5 @@
 #include <print>
+#include <iostream>
 #include <ranges>
 #include <algorithm>
 
@@ -27,7 +28,79 @@ int main() {
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
+    int sq_size = 50;
+
+    float end = WIDTH/2.0f - sq_size;
+    int rad = sq_size/2;
+    int spacing = 20;
+
+    anim::Batch<float> squares {
+        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+    };
+
+    anim::Batch<float> circles {
+        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+    };
+
+    anim::Batch<float> line {
+        {
+            { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
+            { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+        },
+
+        {
+            { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
+            { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+        },
+    };
+
+    // anim::Sequence<float> seq { squares, circles, line };
+
+    squares.start();
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        {
+            ClearBackground(BLACK);
+
+            DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
+            DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
+            DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
+
+            DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
+            DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
+            DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
+
+            DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
+
+            if (squares.is_done() && circles.is_done() && line.is_stopped()) {
+                line.start();
+            }
+
+            if (squares.is_done() && circles.is_stopped()) {
+                circles.start();
+            }
+
+        }
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return EXIT_SUCCESS;
+}
+
+int main3() {
+
+    InitWindow(WIDTH, HEIGHT, "animations");
+    SetTargetFPS(180);
+
     float radius = 50;
+    float offset = 500;
 
     anim::Animation<float> rad {
         { 0, radius, 1, anim::interpolators::squared },
@@ -38,7 +111,6 @@ int main() {
         { RED, BLUE, 2, anim::interpolators::cubed },
     };
 
-    float offset = 500;
     anim::Animation<Vector2> vect {
         { Vector2 { radius, radius }, Vector2 { WIDTH-radius-offset, radius }, 1, anim::interpolators::ease_in_out_cubic },
         { Vector2 { WIDTH-radius-offset, radius }, Vector2 { WIDTH-radius-offset, HEIGHT-radius-offset }, 1, anim::interpolators::ease_in_out_cubic },
@@ -64,8 +136,6 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-
-
 int main2() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
@@ -78,33 +148,37 @@ int main2() {
 
     std::vector<anim::Animation<float>> anims;
 
-    int n = 14;
+    constexpr int n = 9;
+    static_assert(n % 2 != 0, "must be odd");
+
+    bool flip = false;
+
     for (double i=1; i <= n; ++i) {
 
-        double duration = i < n/2.0f ? i : n-i;
+        double duration = i < n/2.0f ? i : n-i+1;
         auto &anim = anims.emplace_back(anim::Animation<float> {
-            { start, end, duration/2.0f, anim::interpolators::ease_in_out_cubic }
+            { start, end, duration/2.0f, anim::interpolators::ease_in_out_back },
         });
 
         anim.start();
     }
-
-    anim::Animation<float> foo {
-        { radius, WIDTH-radius, 5, anim::interpolators::ease_out_expo }
-    };
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
 
-            auto offset = static_cast<float>(WIDTH)/n;
             float spacing = 100;
+            auto width = n * spacing - spacing;
+            auto offset = WIDTH/2.0f - width/2.0f;
 
             for (auto &&[idx, anim] : std::views::enumerate(anims)) {
                 float x0 = offset + spacing * idx;
-                DrawLineEx({x0, start}, {x0, end}, 5, GRAY);
-                DrawCircleV({x0, anim}, radius, BLUE);
+
+                // DrawLineEx({x0, start}, {x0, end}, 5, GRAY);
+                auto value = flip ? start+(end-anim) : anim;
+                DrawCircleV({x0, value}, radius, BLUE);
+
             }
 
             auto longest = std::ranges::max_element(anims, [](const anim::Animation<float> &a, const anim::Animation<float> &b) {
@@ -112,12 +186,10 @@ int main2() {
             });
             assert(longest != anims.end());
 
-            if (longest->is_done() && foo.is_stopped()) {
-                foo.start();
+            if (longest->is_done()) {
+                flip = !flip;
+                for (auto &anim : anims) anim.start();
             }
-
-            DrawCircleV({foo, HEIGHT-radius}, radius, RED);
-            DrawCircleV({foo, radius}, radius, RED);
 
         }
         EndDrawing();

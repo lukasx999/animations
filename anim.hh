@@ -48,6 +48,29 @@ namespace interpolators {
 
 
 
+
+
+// TODO: probably not a good idea, beacuse of generics
+class IAnimation {
+public:
+    virtual void start() = 0;
+    virtual void reset() = 0;
+    [[nodiscard]] virtual double get_duration() const = 0;
+    [[nodiscard]] virtual bool is_stopped() const = 0;
+    [[nodiscard]] virtual bool is_done() const = 0;
+    [[nodiscard]] virtual bool is_running() const = 0;
+};
+
+
+
+
+
+
+
+
+
+
+
 template <typename T>
 T lerp(T start, T end, float x) = delete;
 
@@ -55,6 +78,9 @@ template <typename T> requires std::is_arithmetic_v<T>
 [[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
     return start + x * (end - start);
 }
+
+// Marks a type, that may be interpolated.
+// Types may be qualified via template specialization.
 
 template <typename T>
 concept Interpolatable = requires (T start, T end, float x) {
@@ -135,13 +161,34 @@ public:
     }
 
     [[nodiscard]] bool is_done() const {
+        if (is_stopped()) return false;
         return get_time() >= get_duration();
+    }
+
+    [[nodiscard]] T get(float t) const {
+
+        double time_to_interp = 0.0f;
+
+        auto find_fn = [&](const Interpolator<T> &interp) {
+            time_to_interp += interp.m_duration;
+            bool is_current = t <= time_to_interp;
+            return is_current;
+        };
+
+        auto current = std::ranges::find_if(m_interps, find_fn);
+        assert(current != m_interps.end());
+
+        double diff = time_to_interp - t;
+        return current->get(current->m_duration - diff);
     }
 
     [[nodiscard]] T get() const {
         switch (m_state) {
-            case State::Running:
-                return is_done() ? m_interps.back().m_end : get_running();
+            case State::Running: {
+                if (is_done()) return m_interps.back().m_end;
+                double t = get_time();
+                return get(t);
+            }
 
             case State::Stopped:
                 return m_interps.front().m_start;
@@ -166,24 +213,6 @@ private:
         return get_time_secs() - m_start_time;
     }
 
-    [[nodiscard]] T get_running() const {
-
-        double t = get_time();
-        double time_to_interp = 0.0f;
-
-        auto find_fn = [&](const Interpolator<T> &interp) {
-            time_to_interp += interp.m_duration;
-            bool is_current = t <= time_to_interp;
-            return is_current;
-        };
-
-        auto current = std::ranges::find_if(m_interps, find_fn);
-        assert(current != m_interps.end());
-
-        double diff = time_to_interp - t;
-        return current->get(current->m_duration - diff);
-    }
-
     [[nodiscard]] static inline double get_time_secs() {
         namespace chrono = std::chrono;
 
@@ -197,27 +226,83 @@ private:
 
 
 
-
-// TODO:
-class AnimationBatch {
-    std::vector<Animation<float>> m_anims;
+template <Interpolatable T>
+class Batch {
+    std::vector<Animation<T>> m_anims;
+    using Iterator = std::vector<Animation<T>>::iterator;
 
 public:
-    AnimationBatch(std::initializer_list<Animation<float>> anims)
+    Batch(std::initializer_list<Animation<T>> anims)
     : m_anims(anims)
     { }
 
     [[nodiscard]] double get_duration() const {
+        return get_longest().get_duration();
+    }
 
-        auto longest = std::ranges::max_element(m_anims, [](const anim::Animation<float> &a, const anim::Animation<float> &b) {
+    [[nodiscard]] bool is_done() const {
+        return get_longest().is_done();
+    }
+
+    [[nodiscard]] bool is_running() const {
+        return get_longest().is_running();
+    }
+
+    [[nodiscard]] bool is_stopped() const {
+        return get_longest().is_stopped();
+    }
+
+    void start() {
+        for (auto &anim : m_anims)
+            anim.start();
+    }
+
+    void reset() {
+        for (auto &anim : m_anims)
+            anim.reset();
+    }
+
+    [[nodiscard]] inline Iterator begin() {
+        return m_anims.begin();
+    }
+
+    [[nodiscard]] inline Iterator end() {
+        return m_anims.end();
+    }
+
+    [[nodiscard]] const Animation<T> &operator[](std::size_t idx) const {
+        return m_anims[idx];
+    }
+
+private:
+    [[nodiscard]] const Animation<T> &get_longest() const {
+
+        auto longest = std::ranges::max_element(m_anims, [](const Animation<T> &a, const Animation<T> &b) {
             return b.get_duration() > a.get_duration();
         });
 
         assert(longest != m_anims.end());
 
-        return longest->get_duration();
+        return *longest;
     }
 
+
 };
+
+
+
+// TODO: run batches synchronously
+
+template <Interpolatable T>
+class Sequence {
+    std::vector<Batch<T>> m_batches;
+
+public:
+    Sequence(std::initializer_list<Batch<T>> batches) : m_batches(batches) { }
+
+};
+
+
+
 
 }
