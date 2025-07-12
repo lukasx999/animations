@@ -50,14 +50,15 @@ namespace interpolators {
 
 
 
-class IAnimation {
-public:
+// TODO: pause/resume semantics?
+struct IAnimation {
     virtual void start() = 0;
     virtual void reset() = 0;
     [[nodiscard]] virtual double get_duration() const = 0;
     [[nodiscard]] virtual bool is_stopped() const = 0;
     [[nodiscard]] virtual bool is_done() const = 0;
     [[nodiscard]] virtual bool is_running() const = 0;
+    virtual ~IAnimation() = default;
 };
 
 
@@ -127,10 +128,9 @@ public:
 
 
 
-// TODO: pause/resume semantics?
 
 template <Interpolatable T>
-class Animation {
+class Animation : public IAnimation {
     const std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
     enum class State { Stopped, Running };
@@ -141,25 +141,34 @@ public:
     : m_interps(interps)
     { }
 
-    void start() {
+    void start() override {
         m_state = State::Running;
         m_start_time = get_time_secs();
     }
 
-    void reset() {
+    void reset() override {
         m_state = State::Stopped;
         m_start_time = 0.0f;
     }
 
-    [[nodiscard]] bool is_stopped() const {
+    [[nodiscard]] double get_duration() const override {
+
+        auto acc_fn = [](double acc, const anim::Interpolator<T> &interp) {
+            return acc + interp.m_duration;
+        };
+
+        return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
+    }
+
+    [[nodiscard]] bool is_stopped() const override {
         return m_state == State::Stopped;
     }
 
-    [[nodiscard]] bool is_running() const {
+    [[nodiscard]] bool is_running() const override {
         return m_state == State::Running;
     }
 
-    [[nodiscard]] bool is_done() const {
+    [[nodiscard]] bool is_done() const override {
         if (is_stopped()) return false;
         return get_time() >= get_duration();
     }
@@ -194,15 +203,6 @@ public:
         }
     }
 
-    [[nodiscard]] double get_duration() const {
-
-        auto acc_fn = [](double acc, const anim::Interpolator<T> &interp) {
-            return acc + interp.m_duration;
-        };
-
-        return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
-    }
-
     [[nodiscard]] operator T() const {
         return get();
     }
@@ -223,80 +223,181 @@ private:
 };
 
 
-
-
-template <Interpolatable T>
-class Batch {
-    std::vector<Animation<T>> m_anims;
-    using Iterator = std::vector<Animation<T>>::iterator;
+class BatchRef : public IAnimation {
+    std::vector<std::reference_wrapper<IAnimation>> m_anims;
+    using Iterator = decltype(m_anims)::iterator;
+    using ConstIterator = decltype(m_anims)::const_iterator;
 
 public:
-    Batch(std::initializer_list<Animation<T>> anims)
-    : m_anims(anims)
-    { }
-
-    [[nodiscard]] double get_duration() const {
-        return get_longest().get_duration();
+    template <typename... Ts>
+    BatchRef(Animation<Ts>&... anims) {
+        (m_anims.push_back(std::ref<IAnimation>(anims)), ...);
     }
 
-    [[nodiscard]] bool is_done() const {
-        return get_longest().is_done();
+    template <Interpolatable T>
+    [[nodiscard]] Animation<T>& get(std::size_t idx) {
+        auto ptr = dynamic_cast<Animation<T>*>(&m_anims[idx].get());
+        assert(ptr != nullptr);
+        return *ptr;
     }
 
-    [[nodiscard]] bool is_running() const {
-        return get_longest().is_running();
-    }
+    void start_after(std::initializer_list<std::reference_wrapper<IAnimation>> anims) {
 
-    [[nodiscard]] bool is_stopped() const {
-        return get_longest().is_stopped();
-    }
-
-    void start() {
-        for (auto &anim : m_anims)
-            anim.start();
-    }
-
-    void reset() {
-        for (auto &anim : m_anims)
-            anim.reset();
-    }
-
-    [[nodiscard]] inline Iterator begin() {
-        return m_anims.begin();
-    }
-
-    [[nodiscard]] inline Iterator end() {
-        return m_anims.end();
-    }
-
-    [[nodiscard]] const Animation<T> &operator[](std::size_t idx) const {
-        return m_anims[idx];
-    }
-
-    void start_after(std::initializer_list<const Batch<T>> batches) {
         bool done = true;
-        for (auto &batch : batches) {
-            if (!batch.is_done())
+
+        for (auto& anim : anims) {
+            if (!anim.get().is_done())
                 done = false;
         }
 
-        if (is_stopped() && done) {
+        if (is_stopped() && done)
             start();
-        }
+
+    }
+
+    void start() override {
+        for (auto& anim : m_anims) anim.get().start();
+    }
+
+    void reset() override {
+        for (auto& anim : m_anims) anim.get().reset();
+    }
+
+    [[nodiscard]] double get_duration() const override {
+        return get_longest().get().get_duration();
+    }
+
+    [[nodiscard]] bool is_stopped() const override {
+        return get_longest().get().is_stopped();
+    }
+
+    [[nodiscard]] bool is_done() const override {
+        return get_longest().get().is_done();
+    }
+
+    [[nodiscard]] bool is_running() const override {
+        return get_longest().get().is_running();
+    }
+
+    [[nodiscard]] Iterator begin() {
+        return m_anims.begin();
+    }
+
+    [[nodiscard]] Iterator end() {
+        return m_anims.end();
+    }
+
+    [[nodiscard]] ConstIterator cbegin() const {
+        return m_anims.cbegin();
+    }
+
+    [[nodiscard]] ConstIterator cend() const {
+        return m_anims.cend();
     }
 
 private:
-    [[nodiscard]] const Animation<T> &get_longest() const {
+    [[nodiscard]] std::reference_wrapper<IAnimation> const& get_longest() const {
+        auto fn = [](std::reference_wrapper<IAnimation> const& a, std::reference_wrapper<IAnimation> const& b) {
+            return b.get().get_duration() > a.get().get_duration();
+        };
 
-        auto longest = std::ranges::max_element(m_anims, [](const Animation<T> &a, const Animation<T> &b) {
-            return b.get_duration() > a.get_duration();
-        });
+        auto longest = std::ranges::max_element(m_anims, fn);
 
         assert(longest != m_anims.end());
 
         return *longest;
     }
 
+};
+
+
+class Batch : public IAnimation {
+    std::vector<std::unique_ptr<IAnimation>> m_anims;
+    using Iterator = decltype(m_anims)::iterator;
+    using ConstIterator = decltype(m_anims)::const_iterator;
+
+public:
+    template <typename... Ts>
+    Batch(Animation<Ts>... anims) {
+        // cannot use vector ctor directly, as initializer list will always
+        // perform a copy, which is not possible with unique_ptr
+        (m_anims.push_back(std::make_unique<decltype(anims)>(anims)), ...);
+    }
+
+    template <Interpolatable T>
+    [[nodiscard]] Animation<T>& get(std::size_t idx) {
+        auto ptr = dynamic_cast<Animation<T>*>(m_anims[idx].get());
+        assert(ptr != nullptr);
+        return *ptr;
+    }
+
+    void start_after(std::initializer_list<std::reference_wrapper<IAnimation>> anims) {
+
+        bool done = true;
+
+        for (auto& anim : anims) {
+            if (!anim.get().is_done())
+                done = false;
+        }
+
+        if (is_stopped() && done)
+            start();
+
+    }
+
+    void start() override {
+        for (auto& anim : m_anims) anim->start();
+    }
+
+    void reset() override {
+        for (auto& anim : m_anims) anim->reset();
+    }
+
+    [[nodiscard]] double get_duration() const override {
+        return get_longest()->get_duration();
+    }
+
+    [[nodiscard]] bool is_stopped() const override {
+        return get_longest()->is_stopped();
+    }
+
+    [[nodiscard]] bool is_done() const override {
+        return get_longest()->is_done();
+    }
+
+    [[nodiscard]] bool is_running() const override {
+        return get_longest()->is_running();
+    }
+
+    [[nodiscard]] Iterator begin() {
+        return m_anims.begin();
+    }
+
+    [[nodiscard]] Iterator end() {
+        return m_anims.end();
+    }
+
+    [[nodiscard]] ConstIterator cbegin() const {
+        return m_anims.cbegin();
+    }
+
+    [[nodiscard]] ConstIterator cend() const {
+        return m_anims.cend();
+    }
+
+private:
+    [[nodiscard]] std::unique_ptr<IAnimation> const& get_longest() const {
+
+        auto fn = [](std::unique_ptr<IAnimation> const& a, std::unique_ptr<IAnimation> const& b) {
+            return b->get_duration() > a->get_duration();
+        };
+
+        auto longest = std::ranges::max_element(m_anims, fn);
+
+        assert(longest != m_anims.end());
+
+        return *longest;
+    }
 
 };
 
@@ -304,14 +405,14 @@ private:
 
 // TODO: run batches synchronously
 
-template <Interpolatable T>
-class Sequence {
-    std::vector<Batch<T>> m_batches;
-
-public:
-    Sequence(std::initializer_list<Batch<T>> batches) : m_batches(batches) { }
-
-};
+// template <Interpolatable T>
+// class Sequence {
+//     std::vector<Batch<T>> m_batches;
+//
+// public:
+//     Sequence(std::initializer_list<Batch<T>> batches) : m_batches(batches) { }
+//
+// };
 
 
 

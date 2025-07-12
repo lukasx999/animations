@@ -21,7 +21,7 @@ template <>
     return ColorLerp(start, end, x);
 }
 
-int main3() {
+int main6() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
@@ -32,31 +32,28 @@ int main3() {
     int rad = sq_size/2;
     int spacing = 20;
 
-    anim::Batch<float> squares {
-        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+    anim::Batch squares {
+        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
     };
 
-    anim::Batch<float> circles {
-        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+    anim::Batch circles {
+        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
     };
 
-    anim::Batch<float> line {
-        {
+    anim::Batch line {
+        anim::Animation<float> {
             { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
             { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
         },
-
-        {
+        anim::Animation<float> {
             { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
             { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
         },
     };
-
-    // anim::Sequence<float> seq { squares, circles, line };
 
     squares.start();
 
@@ -65,23 +62,16 @@ int main3() {
         {
             ClearBackground(BLACK);
 
-            DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
-            DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
-            DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
 
-            DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
-            DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
-            DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
-
-            DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
-
-            // if (squares.is_done() && circles.is_done() && line.is_stopped()) {
-            //     line.start();
-            // }
-
-            // if (squares.is_done() && circles.is_stopped()) {
-            //     circles.start();
-            // }
+            // DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
+            // DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
+            // DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
+            //
+            // DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
+            // DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
+            // DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
+            //
+            // DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
 
             line.start_after({circles, squares});
             circles.start_after({squares});
@@ -117,15 +107,18 @@ int main() {
         { Vector2 { WIDTH-radius-offset, radius }, Vector2 { WIDTH-radius-offset, HEIGHT-radius-offset }, 1, anim::interpolators::ease_in_out_cubic },
     };
 
-    rad.start();
-    col.start();
-    vect.start();
+    anim::BatchRef batch { rad, col, vect };
+    batch.start();
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
 
+            // auto rad_ = batch.get<float>(0);
+            // auto col_ = batch.get<Color>(1);
+            // auto vect_ = batch.get<Vector2>(2);
+            // DrawCircleV(vect_, rad_, col_);
             DrawCircleV(vect, rad, col);
 
         }
@@ -137,7 +130,7 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-int main2() {
+int main4() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(60);
