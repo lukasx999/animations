@@ -113,7 +113,7 @@ public:
         , m_fn(fn)
     { }
 
-    [[nodiscard]] operator T() const {
+    operator T() const {
         return get();
     }
 
@@ -123,10 +123,6 @@ public:
     }
 
 };
-
-
-
-
 
 
 
@@ -154,11 +150,11 @@ public:
 
     [[nodiscard]] double get_duration() const override {
 
-        auto acc_fn = [](double acc, const anim::Interpolator<T> &interp) {
+        auto fn = [](double acc, anim::Interpolator<T> const& interp) {
             return acc + interp.m_duration;
         };
 
-        return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, acc_fn);
+        return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, fn);
     }
 
     [[nodiscard]] bool is_stopped() const override {
@@ -204,7 +200,7 @@ public:
         }
     }
 
-    [[nodiscard]] operator T() const {
+    operator T() const {
         return get();
     }
 
