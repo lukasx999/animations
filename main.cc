@@ -21,69 +21,69 @@ template <>
     return ColorLerp(start, end, x);
 }
 
-int main6() {
-
-    InitWindow(WIDTH, HEIGHT, "animations");
-    SetTargetFPS(180);
-
-    int sq_size = 50;
-
-    float end = WIDTH/2.0f - sq_size;
-    int rad = sq_size/2;
-    int spacing = 20;
-
-    anim::Batch squares {
-        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-    };
-
-    anim::Batch circles {
-        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-        anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-    };
-
-    anim::Batch line {
-        anim::Animation<float> {
-            { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
-            { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
-        },
-        anim::Animation<float> {
-            { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
-            { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
-        },
-    };
-
-    squares.start();
-
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        {
-            ClearBackground(BLACK);
-
-
-            // DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
-            // DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
-            // DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
-            //
-            // DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
-            // DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
-            // DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
-            //
-            // DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
-
-            line.start_after({circles, squares});
-            circles.start_after({squares});
-
-        }
-        EndDrawing();
-    }
-
-    CloseWindow();
-
-    return EXIT_SUCCESS;
-}
+// int main6() {
+//
+//     InitWindow(WIDTH, HEIGHT, "animations");
+//     SetTargetFPS(180);
+//
+//     int sq_size = 50;
+//
+//     float end = WIDTH/2.0f - sq_size;
+//     int rad = sq_size/2;
+//     int spacing = 20;
+//
+//     anim::Batch squares {
+//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//     };
+//
+//     anim::Batch circles {
+//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
+//     };
+//
+//     anim::Batch line {
+//         anim::Animation<float> {
+//             { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
+//             { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+//         },
+//         anim::Animation<float> {
+//             { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
+//             { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+//         },
+//     };
+//
+//     squares.start();
+//
+//     while (!WindowShouldClose()) {
+//         BeginDrawing();
+//         {
+//             ClearBackground(BLACK);
+//
+//
+//             // DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
+//             // DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
+//             // DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
+//             //
+//             // DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
+//             // DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
+//             // DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
+//             //
+//             // DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
+//
+//             line.start_after({circles, squares});
+//             circles.start_after({squares});
+//
+//         }
+//         EndDrawing();
+//     }
+//
+//     CloseWindow();
+//
+//     return EXIT_SUCCESS;
+// }
 
 int main() {
 
@@ -107,7 +107,7 @@ int main() {
         { Vector2 { WIDTH-radius-offset, radius }, Vector2 { WIDTH-radius-offset, HEIGHT-radius-offset }, 1, anim::interpolators::ease_in_out_cubic },
     };
 
-    anim::BatchRef batch { rad, col, vect };
+    anim::Batch batch { rad, col, vect };
     batch.start();
 
     while (!WindowShouldClose()) {
