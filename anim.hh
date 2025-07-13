@@ -1,5 +1,6 @@
 #pragma once
 
+#include <print>
 #include <cassert>
 #include <algorithm>
 #include <functional>
@@ -80,7 +81,7 @@ template <typename T> requires std::is_arithmetic_v<T>
 }
 
 // Marks a type, that may be interpolated.
-// Types may be qualified via template specialization.
+// Types may be added via template specialization.
 
 template <typename T>
 concept Interpolatable = requires (T start, T end, float x) {
@@ -177,7 +178,7 @@ public:
 
         double time_to_interp = 0.0f;
 
-        auto find_fn = [&](const Interpolator<T> &interp) {
+        auto find_fn = [&](Interpolator<T> const& interp) {
             time_to_interp += interp.m_duration;
             bool is_current = t <= time_to_interp;
             return is_current;
@@ -223,6 +224,7 @@ private:
 };
 
 
+
 class Batch : public IAnimation {
     std::vector<std::reference_wrapper<IAnimation>> m_anims;
     using Iterator = decltype(m_anims)::iterator;
@@ -256,11 +258,13 @@ public:
     }
 
     void start() override {
-        for (auto& anim : m_anims) anim.get().start();
+        for (auto& anim : m_anims)
+            anim.get().start();
     }
 
     void reset() override {
-        for (auto& anim : m_anims) anim.get().reset();
+        for (auto& anim : m_anims)
+            anim.get().reset();
     }
 
     [[nodiscard]] double get_duration() const override {
@@ -297,11 +301,11 @@ public:
 
 private:
     [[nodiscard]] std::reference_wrapper<IAnimation> const& get_longest() const {
-        auto fn = [](std::reference_wrapper<IAnimation> const& a, std::reference_wrapper<IAnimation> const& b) {
+        auto max_fn = [](std::reference_wrapper<IAnimation> const& a, decltype(a) b) {
             return b.get().get_duration() > a.get().get_duration();
         };
 
-        auto longest = std::ranges::max_element(m_anims, fn);
+        auto longest = std::ranges::max_element(m_anims, max_fn);
 
         assert(longest != m_anims.end());
 
@@ -310,19 +314,72 @@ private:
 
 };
 
+class Sequence : public IAnimation {
+    std::vector<std::reference_wrapper<IAnimation>> m_anims;
+    std::optional<decltype(m_anims)::iterator> m_current;
 
-// TODO: run batches synchronously
+public:
+    Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
+        : m_anims(anims)
+    { }
 
-// template <Interpolatable T>
-// class Sequence {
-//     std::vector<Batch<T>> m_batches;
-//
-// public:
-//     Sequence(std::initializer_list<Batch<T>> batches) : m_batches(batches) { }
-//
-// };
+    void dispatch() {
 
+        bool running = m_current.has_value();
+        if (!running) return;
 
+        auto& it = m_current.value();
 
+        if (it->get().is_done()) {
+            it++;
+
+            bool is_at_end = m_current == m_anims.end();
+            if (is_at_end) {
+                m_current = { };
+                return;
+            }
+
+            it->get().start();
+        }
+
+    }
+
+    void start() override {
+        reset();
+        m_anims.front().get().start();
+        m_current = m_anims.begin();
+    }
+
+    void reset() override {
+        for (auto& anim : m_anims)
+            anim.get().reset();
+        m_current = { };
+    }
+
+    [[nodiscard]] double get_duration() const override {
+        auto fn = [](double acc, std::reference_wrapper<IAnimation> const& elem) {
+            return acc + elem.get().get_duration();
+        };
+        double t = std::accumulate(m_anims.cbegin(), m_anims.cend(), 0.0f, fn);
+        return t;
+    }
+
+    [[nodiscard]] bool is_stopped() const override {
+        return m_anims.front().get().is_done();
+    }
+
+    [[nodiscard]] bool is_done() const override {
+        return m_anims.back().get().is_done();
+    }
+
+    [[nodiscard]] bool is_running() const override {
+        auto fn = [](std::reference_wrapper<IAnimation> const& elem) {
+            return elem.get().is_running();
+        };
+
+        return std::ranges::any_of(m_anims, fn);
+    }
+
+};
 
 }

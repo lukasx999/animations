@@ -107,18 +107,24 @@ int main() {
         { Vector2 { WIDTH-radius-offset, radius }, Vector2 { WIDTH-radius-offset, HEIGHT-radius-offset }, 1, anim::interpolators::ease_in_out_cubic },
     };
 
+    anim::Animation<float> pos {
+        { radius, WIDTH-radius, 1, anim::interpolators::ease_in_out_cubic },
+    };
+
     anim::Batch batch { rad, col, vect };
-    batch.start();
+    anim::Sequence seq { batch, pos };
+    seq.start();
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
+            seq.dispatch();
 
-            // auto rad_ = batch.get<float>(0);
-            // auto col_ = batch.get<Color>(1);
-            // auto vect_ = batch.get<Vector2>(2);
-            // DrawCircleV(vect_, rad_, col_);
+            if (IsKeyPressed(KEY_J))
+                seq.start();
+
+            DrawCircle(pos, HEIGHT/4.0f, radius, ORANGE);
             DrawCircleV(vect, rad, col);
 
         }
