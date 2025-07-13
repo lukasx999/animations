@@ -4,6 +4,7 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#define ANIM_FEATURE_RAYLIB
 #include "anim.hh"
 
 #define PRINT(x) std::println("{}: {}", #x, x);
@@ -11,17 +12,8 @@
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
 
-template <>
-[[nodiscard]] inline constexpr Vector2 anim::lerp(Vector2 start, Vector2 end, float x) {
-    return Vector2Lerp(start, end, x);
-}
 
-template <>
-[[nodiscard]] inline constexpr Color anim::lerp(Color start, Color end, float x) {
-    return ColorLerp(start, end, x);
-}
-
-int main() {
+int main__() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
@@ -32,13 +24,13 @@ int main() {
     int rad = sq_size/2;
     int spacing = 20;
 
-    anim::Animation<float> square1 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
-    anim::Animation<float> square2 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
-    anim::Animation<float> square3 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> square1({ 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
+    anim::Animation<float> square2({ 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
+    anim::Animation<float> square3({ 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
 
-    anim::Animation<float> circle1 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
-    anim::Animation<float> circle2 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
-    anim::Animation<float> circle3 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> circle1({ static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
+    anim::Animation<float> circle2({ static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
+    anim::Animation<float> circle3({ static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
 
     anim::Animation<float> line1 {
         { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
@@ -135,7 +127,7 @@ int main_() {
     return EXIT_SUCCESS;
 }
 
-int main4() {
+int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(60);
@@ -162,6 +154,13 @@ int main4() {
         anim.start();
     }
 
+    anim::Batch batch;
+
+    for (auto& anim : anims)
+        batch.add(anim);
+
+    batch.start();
+
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
@@ -178,16 +177,6 @@ int main4() {
                 auto value = flip ? start+(end-anim) : anim;
                 DrawCircleV({x0, value}, radius, BLUE);
 
-            }
-
-            auto longest = std::ranges::max_element(anims, [](const anim::Animation<float> &a, const anim::Animation<float> &b) {
-                return b.get_duration() > a.get_duration();
-            });
-            assert(longest != anims.end());
-
-            if (longest->is_done()) {
-                flip = !flip;
-                for (auto &anim : anims) anim.start();
             }
 
         }

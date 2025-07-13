@@ -48,9 +48,6 @@ namespace interpolators {
 }
 
 
-
-
-
 // TODO: pause/resume semantics?
 struct IAnimation {
     virtual void start() = 0;
@@ -61,14 +58,6 @@ struct IAnimation {
     [[nodiscard]] virtual bool is_running() const = 0;
     virtual ~IAnimation() = default;
 };
-
-
-
-
-
-
-
-
 
 
 
@@ -87,6 +76,20 @@ template <typename T>
 concept Interpolatable = requires (T start, T end, float x) {
     lerp(start, end, x);
 };
+
+#ifdef ANIM_FEATURE_RAYLIB
+
+template <>
+[[nodiscard]] inline constexpr Vector2 lerp(Vector2 start, Vector2 end, float x) {
+    return Vector2Lerp(start, end, x);
+}
+
+template <>
+[[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) {
+    return ColorLerp(start, end, x);
+}
+
+#endif // ANIM_FEATURE_RAYLIB
 
 // TODO: implement IAnimation for this?
 
@@ -144,14 +147,22 @@ template <Interpolatable T>
 class Animation : public IAnimation {
     enum class State { Stopped, Running };
 
-    const std::vector<Interpolator<T>> m_interps;
+    std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
     State m_state = State::Stopped;
 
 public:
+    Animation() = default;
+
     Animation(std::initializer_list<Interpolator<T>> interps)
     : m_interps(interps)
     { }
+
+    explicit Animation(Interpolator<T> interps) : m_interps { interps } { }
+
+    void add(Interpolator<T> interp) {
+        m_interps.push_bakc(interp);
+    }
 
     void start() override {
         m_state = State::Running;
@@ -243,9 +254,15 @@ class Batch : public IAnimation {
     using ConstIterator = decltype(m_anims)::const_iterator;
 
 public:
+    Batch() = default;
+
     Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
     : m_anims(anims)
     { }
+
+    void add(IAnimation& anim) {
+        m_anims.push_back(anim);
+    }
 
     template <Interpolatable T>
     [[nodiscard]] Animation<T>& get(std::size_t idx) {
@@ -317,9 +334,15 @@ class Sequence : public IAnimation {
     std::optional<decltype(m_anims)::iterator> m_current;
 
 public:
+    Sequence() = default;
+
     Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
     : m_anims(anims)
     { }
+
+    void add(IAnimation& anim) {
+        m_anims.push_back(anim);
+    }
 
     void dispatch() {
 
