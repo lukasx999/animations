@@ -80,23 +80,38 @@ template <typename T> requires std::is_arithmetic_v<T>
     return start + x * (end - start);
 }
 
-// Marks a type, that may be interpolated.
-// Types may be added via template specialization.
+// concept for a type that may be interpolated
+// custom types may be added via template specialization of anim::lerp()
 
 template <typename T>
 concept Interpolatable = requires (T start, T end, float x) {
     lerp(start, end, x);
 };
 
+// TODO: implement IAnimation for this?
+
+// a transition between two values
 template <Interpolatable T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
-    const InterpFn m_fn;
 
-public:
+    const InterpFn m_fn;
     const T m_start;
     const T m_end;
     const double m_duration;
+
+public:
+    [[nodiscard]] T get_start() const {
+        return m_start;
+    }
+
+    [[nodiscard]] T get_end() const {
+        return m_end;
+    }
+
+    [[nodiscard]] double get_duration() const {
+        return m_duration;
+    }
 
     Interpolator() : Interpolator(1.0f) { }
     explicit Interpolator(T end) : Interpolator(0.0f, end) { }
@@ -124,13 +139,13 @@ public:
 
 };
 
-
-
+// runs a list of interpolators synchronously
 template <Interpolatable T>
 class Animation : public IAnimation {
+    enum class State { Stopped, Running };
+
     const std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
-    enum class State { Stopped, Running };
     State m_state = State::Stopped;
 
 public:
@@ -151,7 +166,7 @@ public:
     [[nodiscard]] double get_duration() const override {
 
         auto fn = [](double acc, anim::Interpolator<T> const& interp) {
-            return acc + interp.m_duration;
+            return acc + interp.get_duration();
         };
 
         return std::accumulate(m_interps.cbegin(), m_interps.cend(), 0.0f, fn);
@@ -174,29 +189,29 @@ public:
 
         double time_to_interp = 0.0f;
 
-        auto find_fn = [&](Interpolator<T> const& interp) {
-            time_to_interp += interp.m_duration;
+        auto fn = [&](Interpolator<T> const& interp) {
+            time_to_interp += interp.get_duration();
             bool is_current = t <= time_to_interp;
             return is_current;
         };
 
-        auto current = std::ranges::find_if(m_interps, find_fn);
+        auto current = std::ranges::find_if(m_interps, fn);
         assert(current != m_interps.end());
 
         double diff = time_to_interp - t;
-        return current->get(current->m_duration - diff);
+        return current->get(current->get_duration() - diff);
     }
 
     [[nodiscard]] T get() const {
         switch (m_state) {
             case State::Running: {
-                if (is_done()) return m_interps.back().m_end;
+                if (is_done()) return m_interps.back().get_end();
                 double t = get_time();
                 return get(t);
             }
 
             case State::Stopped:
-                return m_interps.front().m_start;
+                return m_interps.front().get_start();
         }
     }
 
@@ -221,36 +236,22 @@ private:
 
 
 
+// runs animations concurrently
 class Batch : public IAnimation {
     std::vector<std::reference_wrapper<IAnimation>> m_anims;
     using Iterator = decltype(m_anims)::iterator;
     using ConstIterator = decltype(m_anims)::const_iterator;
 
 public:
-    template <typename... Ts>
-    Batch(Animation<Ts>&... anims) {
-        (m_anims.push_back(std::ref<IAnimation>(anims)), ...);
-    }
+    Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
+    : m_anims(anims)
+    { }
 
     template <Interpolatable T>
     [[nodiscard]] Animation<T>& get(std::size_t idx) {
         auto ptr = dynamic_cast<Animation<T>*>(&m_anims[idx].get());
         assert(ptr != nullptr);
         return *ptr;
-    }
-
-    void start_after(std::initializer_list<std::reference_wrapper<IAnimation>> anims) {
-
-        bool done = true;
-
-        for (auto& anim : anims) {
-            if (!anim.get().is_done())
-                done = false;
-        }
-
-        if (is_stopped() && done)
-            start();
-
     }
 
     void start() override {
@@ -310,13 +311,14 @@ private:
 
 };
 
+// runs animations synchronously
 class Sequence : public IAnimation {
     std::vector<std::reference_wrapper<IAnimation>> m_anims;
     std::optional<decltype(m_anims)::iterator> m_current;
 
 public:
     Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
-        : m_anims(anims)
+    : m_anims(anims)
     { }
 
     void dispatch() {

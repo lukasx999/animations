@@ -21,71 +21,70 @@ template <>
     return ColorLerp(start, end, x);
 }
 
-// int main6() {
-//
-//     InitWindow(WIDTH, HEIGHT, "animations");
-//     SetTargetFPS(180);
-//
-//     int sq_size = 50;
-//
-//     float end = WIDTH/2.0f - sq_size;
-//     int rad = sq_size/2;
-//     int spacing = 20;
-//
-//     anim::Batch squares {
-//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//         anim::Animation<float> { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//     };
-//
-//     anim::Batch circles {
-//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//         anim::Animation<float> { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } },
-//     };
-//
-//     anim::Batch line {
-//         anim::Animation<float> {
-//             { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
-//             { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
-//         },
-//         anim::Animation<float> {
-//             { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
-//             { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
-//         },
-//     };
-//
-//     squares.start();
-//
-//     while (!WindowShouldClose()) {
-//         BeginDrawing();
-//         {
-//             ClearBackground(BLACK);
-//
-//
-//             // DrawRectangle(squares[0], HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
-//             // DrawRectangle(squares[1], HEIGHT/2.0f, sq_size, sq_size, BLUE);
-//             // DrawRectangle(squares[2], HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
-//             //
-//             // DrawCircle(circles[0], HEIGHT/2.0f-sq_size*2+rad, rad, RED);
-//             // DrawCircle(circles[1], HEIGHT/2.0f+rad, rad, RED);
-//             // DrawCircle(circles[2], HEIGHT/2.0f+sq_size*2+rad, rad, RED);
-//             //
-//             // DrawLineEx({ end+sq_size, line[0] }, { end+sq_size, line[1] }, spacing, PURPLE);
-//
-//             line.start_after({circles, squares});
-//             circles.start_after({squares});
-//
-//         }
-//         EndDrawing();
-//     }
-//
-//     CloseWindow();
-//
-//     return EXIT_SUCCESS;
-// }
-
 int main() {
+
+    InitWindow(WIDTH, HEIGHT, "animations");
+    SetTargetFPS(180);
+
+    int sq_size = 50;
+
+    float end = WIDTH/2.0f - sq_size;
+    int rad = sq_size/2;
+    int spacing = 20;
+
+    anim::Animation<float> square1 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> square2 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> square3 { { 0, end-spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+
+    anim::Animation<float> circle1 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> circle2 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+    anim::Animation<float> circle3 { { static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic } };
+
+    anim::Animation<float> line1 {
+        { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
+        { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+    };
+
+    anim::Animation<float> line2 {
+        { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
+        { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+    };
+
+    anim::Batch squares { square1, square2, square3 };
+    anim::Batch circles { circle1, circle2, circle3 };
+    anim::Batch lines { line1, line2 };
+
+    anim::Sequence seq { squares, circles, lines };
+    seq.start();
+
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        {
+            ClearBackground(BLACK);
+
+            seq.dispatch();
+
+            DrawRectangle(square1, HEIGHT/2.0f-sq_size*2, sq_size, sq_size, BLUE);
+            DrawRectangle(square2, HEIGHT/2.0f, sq_size, sq_size, BLUE);
+            DrawRectangle(square3, HEIGHT/2.0f+sq_size*2, sq_size, sq_size, BLUE);
+
+            DrawCircle(circle1, HEIGHT/2.0f-sq_size*2+rad, rad, RED);
+            DrawCircle(circle2, HEIGHT/2.0f+rad, rad, RED);
+            DrawCircle(circle3, HEIGHT/2.0f+sq_size*2+rad, rad, RED);
+
+            DrawLineEx({ end+sq_size, line1 }, { end+sq_size, line2 }, spacing, PURPLE);
+
+        }
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return EXIT_SUCCESS;
+}
+
+int main_() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
