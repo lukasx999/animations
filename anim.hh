@@ -12,19 +12,19 @@ namespace anim {
 
 namespace interpolators {
 
-[[nodiscard]] inline constexpr float step(float) noexcept {
-    return 1.0f;
-}
-
 [[nodiscard]] inline constexpr float linear(float x) noexcept {
     return x;
 }
 
-[[nodiscard]] inline constexpr float squared(float x) noexcept {
+[[nodiscard]] inline constexpr float ease_in_quad(float x) noexcept {
     return std::pow(x, 2);
 }
 
-[[nodiscard]] inline constexpr float cubed(float x) noexcept {
+[[nodiscard]] inline constexpr float ease_in_out_quad(float x) noexcept {
+    return x < 0.5 ? 2 * x * x : 1 - std::pow(-2 * x + 2, 2) / 2;
+}
+
+[[nodiscard]] inline constexpr float ease_in_cubic(float x) noexcept {
     return std::pow(x, 3);
 }
 
@@ -379,6 +379,14 @@ public:
     }
 
     void dispatch() {
+        // TODO: remove
+        for (auto& anim : m_anims) {
+            auto text = anim.get().is_running() ? "running" :
+                anim.get().is_done() ? "done" :
+                anim.get().is_stopped() ? "stopped" : "";
+            std::println("anim: {}, {}", anim.get().get_duration(), text);
+        }
+        std::println("---------------");
 
         bool running = m_current.has_value();
         if (!running) return;
@@ -442,6 +450,8 @@ public:
 class AnimationTemplate : public IAnimation {
 protected:
     Sequence m_anim;
+    AnimationTemplate() = default;
+    AnimationTemplate(Sequence anim) : m_anim(anim) { }
 
 public:
     void start() override {

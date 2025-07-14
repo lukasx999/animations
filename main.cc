@@ -28,7 +28,7 @@ static void draw_text_centered(Vector2 center, char const* text, float fontsize)
     DrawText(text, center.x-textsize/2.0f, center.y-fontsize/2, fontsize, WHITE);
 }
 
-class LoadingBarAnimation {
+class LoadingBarAnimation : public anim::AnimationTemplate {
     const Vector2 m_center;
     const float m_width;
     const float m_thickness;
@@ -44,24 +44,19 @@ class LoadingBarAnimation {
     anim::Animation<Color> m_anim_color_end = init_anim_color_end();
 
     anim::Batch m_box { m_roundness, m_rect };
-    anim::Sequence m_anim { m_bar_width, m_box, m_anim_color_end };
 
 public:
     LoadingBarAnimation(Vector2 center, float width, float thickness, float height,
                         Color color_bar, Color color_outline, Color color_end)
-        : m_center(center)
+        : anim::AnimationTemplate({ m_bar_width, m_box, m_anim_color_end })
+        , m_center(center)
         , m_width(width)
         , m_thickness(thickness)
         , m_height(height)
         , m_color_bar(color_bar)
         , m_color_outline(color_outline)
         , m_color_end(color_end)
-    {
-    };
-
-    void start() {
-        m_anim.start();
-    }
+    { };
 
     void draw() {
 
@@ -119,25 +114,63 @@ private:
     }
 
     [[nodiscard]] constexpr anim::Animation<Color> init_anim_color_end() const {
-        return anim::Interpolator<Color> { m_color_bar, m_color_end, 1, anim::interpolators::ease_in_out_quint };
+        return anim::Interpolator<Color> { m_color_bar, m_color_end, 1, anim::interpolators::ease_in_out_quad };
     }
 
 };
-
 
 int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
-    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 5, 100, BLUE, WHITE, BLACK);
-    loading_bar.start();
+    anim::Animation<float> a({ 0, 100, 2, anim::interpolators::linear });
+    anim::Animation<float> b({ 0, 100, 2, anim::interpolators::linear });
+    anim::Animation<float> c({ 0, 100, 2, anim::interpolators::linear });
+    anim::Sequence seq { a, b, c };
+    seq.start();
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(BLACK);
+
+            seq.dispatch();
+
+        }
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return EXIT_SUCCESS;
+}
+
+int main1() {
+
+    InitWindow(WIDTH, HEIGHT, "animations");
+    SetTargetFPS(180);
+
+    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 10, 100, MAROON, ORANGE, BLACK);
+
+    anim::Animation<float> rot({ 0, 180, 2, anim::interpolators::ease_in_out_quad });
+    anim::Sequence seq { rot, loading_bar };
+
+    seq.start();
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        {
+            ClearBackground(BLACK);
+
+            seq.dispatch();
+
             loading_bar.draw();
+
+            if (rot.is_running()) {
+                Rectangle rect = { WIDTH/2.0f, HEIGHT/2.0f, 300, 300};
+                DrawRectanglePro(rect, { rect.width/2, rect.height/2 }, rot, BLUE);
+            }
 
         }
         EndDrawing();
@@ -168,13 +201,13 @@ int main__() {
     anim::Animation<float> circle3({ static_cast<float>(WIDTH-rad), end+sq_size+rad+spacing, 1.0f, anim::interpolators::ease_in_out_cubic });
 
     anim::Animation<float> line1 {
-        { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::squared },
-        { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+        { HEIGHT/2.0f, HEIGHT, 1.0f, anim::interpolators::ease_in_quad },
+        { HEIGHT, HEIGHT/2.0f, 1.0f, anim::interpolators::ease_in_quad },
     };
 
     anim::Animation<float> line2 {
-        { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::squared },
-        { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::squared },
+        { HEIGHT/2.0f, 0, 1.0f, anim::interpolators::ease_in_quad },
+        { 0, HEIGHT/2.0f, 1.0f, anim::interpolators::ease_in_quad },
     };
 
     anim::Batch squares { square1, square2, square3 };
@@ -220,12 +253,12 @@ int main_() {
     float offset = 500;
 
     anim::Animation<float> rad {
-        { 0, radius, 1, anim::interpolators::squared },
-        { radius, 0, 1, anim::interpolators::squared },
+        { 0, radius, 1, anim::interpolators::ease_in_quad },
+        { radius, 0, 1, anim::interpolators::ease_in_quad },
     };
 
     anim::Animation<Color> col {
-        { RED, BLUE, 2, anim::interpolators::cubed },
+        { RED, BLUE, 2, anim::interpolators::ease_in_cubic },
     };
 
     anim::Animation<Vector2> vect {
