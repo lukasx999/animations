@@ -80,6 +80,7 @@ struct IAnimation {
 
 
 
+
 template <typename T>
 T lerp(T start, T end, float x) = delete;
 
@@ -435,5 +436,45 @@ public:
     }
 
 };
+
+
+
+class AnimationTemplate : public IAnimation {
+protected:
+    Sequence m_anim;
+
+public:
+    void start() override {
+        m_anim.start();
+    }
+
+    void reset() override {
+        m_anim.reset();
+    }
+
+    [[nodiscard]] double get_duration() const override {
+        return m_anim.get_duration();
+    }
+
+    [[nodiscard]] bool is_stopped() const override {
+        return m_anim.is_stopped();
+    }
+
+    [[nodiscard]] bool is_done() const override {
+        return m_anim.is_done();
+    }
+
+    [[nodiscard]] bool is_running() const override {
+        return m_anim.is_running();
+    }
+
+};
+
+
+
+
+
+
+
 
 }
