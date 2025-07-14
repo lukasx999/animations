@@ -77,10 +77,10 @@ struct IAnimation {
 
 
 template <typename T>
-T lerp(T start, T end, float x) noexcept = delete;
+T lerp(T start, T end, float x) = delete;
 
 template <typename T> requires std::is_arithmetic_v<T>
-[[nodiscard]] inline constexpr T lerp(T start, T end, float x) noexcept {
+[[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
     return start + x * (end - start);
 }
 
@@ -95,12 +95,12 @@ concept Interpolatable = requires (T start, T end, float x) {
 #ifdef ANIM_INTEGRATION_RAYLIB
 
 template <>
-[[nodiscard]] inline constexpr Vector2 lerp(Vector2 start, Vector2 end, float x) noexcept {
+[[nodiscard]] inline constexpr Vector2 lerp(Vector2 start, Vector2 end, float x) {
     return Vector2Lerp(start, end, x);
 }
 
 template <>
-[[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) noexcept {
+[[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) {
     return ColorLerp(start, end, x);
 }
 
