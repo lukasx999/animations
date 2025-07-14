@@ -1,10 +1,11 @@
 #include <print>
+#include <array>
 #include <ranges>
 
 #include <raylib.h>
 #include <raymath.h>
 
-#define ANIM_FEATURE_RAYLIB
+#define ANIM_INTEGRATION_RAYLIB
 #include "anim.hh"
 
 #define PRINT(x) std::println("{}: {}", #x, x);
@@ -12,6 +13,82 @@
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
 
+static void draw_text_centered(Vector2 center, char const* text, float fontsize) {
+    float textsize = MeasureText(text, fontsize);
+    DrawText(text, center.x-textsize/2.0f, center.y-fontsize/2, fontsize, WHITE);
+}
+
+class LoadingBarAnimation {
+    Vector2 m_center;
+    float m_width;
+    float m_thickness;
+    float m_height;
+    anim::Animation<float> m_x{ { 0, m_width, 3, anim::interpolators::ease_in_out_circ } };
+
+public:
+    LoadingBarAnimation(Vector2 center, float width, float thickness, float height)
+        : m_center(center)
+        , m_width(width)
+        , m_thickness(thickness)
+        , m_height(height)
+    { };
+
+    void start() {
+        m_x.start();
+    }
+
+    void draw() const {
+
+        Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
+
+        float radius = m_height/2;
+
+        Color color = RED;
+
+        BeginScissorMode(start.x, start.y, m_x, m_height);
+            DrawCircleV({ start.x+radius, start.y+radius }, radius, color);
+        EndScissorMode();
+
+        if (m_x > m_width-radius) {
+            BeginScissorMode(start.x, start.y, m_x, m_height);
+                DrawCircleV({ start.x+m_width-radius, start.y+radius }, radius, color);
+            EndScissorMode();
+        }
+
+        if (m_x >= radius) {
+            BeginScissorMode(start.x+radius, start.y, m_width-radius*2, m_height);
+                DrawRectangleRec({ start.x+radius, start.y, m_x-radius, m_height }, color);
+            EndScissorMode();
+        }
+
+        Rectangle rect = { start.x, start.y, m_width, m_height };
+        DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, BLUE);
+
+    }
+};
+
+int main() {
+
+    InitWindow(WIDTH, HEIGHT, "animations");
+    SetTargetFPS(180);
+
+    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 15, 100);
+    loading_bar.start();
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        {
+            ClearBackground(BLACK);
+            loading_bar.draw();
+
+        }
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return EXIT_SUCCESS;
+}
 
 int main__() {
 
@@ -127,7 +204,7 @@ int main_() {
     return EXIT_SUCCESS;
 }
 
-int main() {
+int main____() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(60);

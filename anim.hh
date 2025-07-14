@@ -12,37 +12,52 @@ namespace anim {
 
 namespace interpolators {
 
-[[nodiscard]] inline constexpr float step(float) {
+[[nodiscard]] inline constexpr float step(float) noexcept {
     return 1.0f;
 }
 
-[[nodiscard]] inline constexpr float linear(float x) {
+[[nodiscard]] inline constexpr float linear(float x) noexcept {
     return x;
 }
 
-[[nodiscard]] inline constexpr float squared(float x) {
+[[nodiscard]] inline constexpr float squared(float x) noexcept {
     return std::pow(x, 2);
 }
 
-[[nodiscard]] inline constexpr float cubed(float x) {
+[[nodiscard]] inline constexpr float cubed(float x) noexcept {
     return std::pow(x, 3);
 }
 
-[[nodiscard]] inline constexpr float ease_out_expo(float x) {
+[[nodiscard]] inline constexpr float ease_out_expo(float x) noexcept {
     return x == 1 ? 1 : 1 - std::pow(2, -10 * x);
 }
 
-[[nodiscard]] inline constexpr float ease_in_out_cubic(float x) {
+[[nodiscard]] inline constexpr float ease_in_out_cubic(float x) noexcept {
     return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
 }
 
-[[nodiscard]] inline constexpr float ease_in_out_back(float x) {
+[[nodiscard]] inline constexpr float ease_in_out_back(float x) noexcept {
     float c1 = 1.70158;
     float c2 = c1 * 1.525;
 
     return x < 0.5
     ? (std::pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
     : (std::pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
+}
+
+[[nodiscard]] inline constexpr float ease_in_out_circ(float x) noexcept {
+    return x < 0.5
+    ? (1 - std::sqrt(1 - std::pow(2 * x, 2))) / 2
+    : (std::sqrt(1 - std::pow(-2 * x + 2, 2)) + 1) / 2;
+}
+
+[[nodiscard]] inline constexpr float ease_in_out_quint(float x) noexcept {
+    return x < 0.5 ? 16 * std::pow(x, 5) : 1 - std::pow(-2 * x + 2, 5) / 2;
+}
+
+[[nodiscard]] inline constexpr float ease_out_elastic(float x) noexcept {
+    float c4 = (2 * M_PI) / 3;
+    return x == 0 ? 0 : x == 1 ? 1 : std::pow(2, -10 * x) * std::sin((x * 10 - 0.75) * c4) + 1;
 }
 
 }
@@ -62,10 +77,10 @@ struct IAnimation {
 
 
 template <typename T>
-T lerp(T start, T end, float x) = delete;
+T lerp(T start, T end, float x) noexcept = delete;
 
 template <typename T> requires std::is_arithmetic_v<T>
-[[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
+[[nodiscard]] inline constexpr T lerp(T start, T end, float x) noexcept {
     return start + x * (end - start);
 }
 
@@ -77,19 +92,19 @@ concept Interpolatable = requires (T start, T end, float x) {
     lerp(start, end, x);
 };
 
-#ifdef ANIM_FEATURE_RAYLIB
+#ifdef ANIM_INTEGRATION_RAYLIB
 
 template <>
-[[nodiscard]] inline constexpr Vector2 lerp(Vector2 start, Vector2 end, float x) {
+[[nodiscard]] inline constexpr Vector2 lerp(Vector2 start, Vector2 end, float x) noexcept {
     return Vector2Lerp(start, end, x);
 }
 
 template <>
-[[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) {
+[[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) noexcept {
     return ColorLerp(start, end, x);
 }
 
-#endif // ANIM_FEATURE_RAYLIB
+#endif // ANIM_INTEGRATION_RAYLIB
 
 // TODO: implement IAnimation for this?
 
