@@ -23,6 +23,8 @@ class LoadingBarAnimation {
     float m_width;
     float m_thickness;
     float m_height;
+    Color m_color_bar = MAROON;
+    Color m_color_outline = ORANGE;
     anim::Animation<float> m_x{ { 0, m_width, 3, anim::interpolators::ease_in_out_circ } };
 
 public:
@@ -43,26 +45,25 @@ public:
 
         float radius = m_height/2;
 
-        Color color = RED;
 
         BeginScissorMode(start.x, start.y, m_x, m_height);
-            DrawCircleV({ start.x+radius, start.y+radius }, radius, color);
+            DrawCircleV({ start.x+radius, start.y+radius }, radius, m_color_bar);
         EndScissorMode();
 
         if (m_x > m_width-radius) {
             BeginScissorMode(start.x, start.y, m_x, m_height);
-                DrawCircleV({ start.x+m_width-radius, start.y+radius }, radius, color);
+                DrawCircleV({ start.x+m_width-radius, start.y+radius }, radius, m_color_bar);
             EndScissorMode();
         }
 
         if (m_x >= radius) {
             BeginScissorMode(start.x+radius, start.y, m_width-radius*2, m_height);
-                DrawRectangleRec({ start.x+radius, start.y, m_x-radius, m_height }, color);
+                DrawRectangleRec({ start.x+radius, start.y, m_x-radius, m_height }, m_color_bar);
             EndScissorMode();
         }
 
         Rectangle rect = { start.x, start.y, m_width, m_height };
-        DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, BLUE);
+        DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, m_color_outline);
 
     }
 };
@@ -72,7 +73,7 @@ int main() {
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
-    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 15, 100);
+    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 5, 100);
     loading_bar.start();
 
     while (!WindowShouldClose()) {
