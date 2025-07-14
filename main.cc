@@ -8,10 +8,20 @@
 #define ANIM_INTEGRATION_RAYLIB
 #include "anim.hh"
 
+
+
+
+
 #define PRINT(x) std::println("{}: {}", #x, x);
 
 static constexpr auto WIDTH = 1600;
 static constexpr auto HEIGHT = 900;
+
+
+
+
+
+
 
 static void draw_text_centered(Vector2 center, char const* text, float fontsize) {
     float textsize = MeasureText(text, fontsize);
@@ -19,61 +29,108 @@ static void draw_text_centered(Vector2 center, char const* text, float fontsize)
 }
 
 class LoadingBarAnimation {
-    Vector2 m_center;
-    float m_width;
-    float m_thickness;
-    float m_height;
-    Color m_color_bar = MAROON;
-    Color m_color_outline = ORANGE;
-    anim::Animation<float> m_x{ { 0, m_width, 3, anim::interpolators::ease_in_out_circ } };
+    const Vector2 m_center;
+    const float m_width;
+    const float m_thickness;
+    const float m_height;
+
+    const Color m_color_bar;
+    const Color m_color_outline;
+    const Color m_color_end;
+
+    anim::Animation<float> m_bar_width { { 0, m_width, 1, anim::interpolators::ease_in_out_circ } };
+    anim::Animation<float> m_roundness { { 1.0f, 0.0f, 1, anim::interpolators::ease_in_expo } };
+    anim::Animation<Rectangle> m_rect = init_rect();
+    anim::Animation<Color> m_anim_color_end = init_anim_color_end();
+
+    anim::Batch m_box { m_roundness, m_rect };
+    anim::Sequence m_anim { m_bar_width, m_box, m_anim_color_end };
 
 public:
-    LoadingBarAnimation(Vector2 center, float width, float thickness, float height)
+    LoadingBarAnimation(Vector2 center, float width, float thickness, float height,
+                        Color color_bar, Color color_outline, Color color_end)
         : m_center(center)
         , m_width(width)
         , m_thickness(thickness)
         , m_height(height)
-    { };
+        , m_color_bar(color_bar)
+        , m_color_outline(color_outline)
+        , m_color_end(color_end)
+    {
+    };
 
     void start() {
-        m_x.start();
+        m_anim.start();
     }
 
-    void draw() const {
+    void draw() {
+
+        m_anim.dispatch();
 
         Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
 
+        if (m_bar_width.is_running()) {
+            draw_inner_bar();
+            Rectangle rect = { start.x, start.y, m_width, m_height };
+            DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, m_color_outline);
+        }
+
+        if (m_box.is_running()) {
+            DrawRectangleRounded(m_rect, m_roundness, 0, m_anim_color_end);
+        }
+
+    }
+
+private:
+    void draw_inner_bar() const {
+
+        Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
         float radius = m_height/2;
 
-
-        BeginScissorMode(start.x, start.y, m_x, m_height);
+        BeginScissorMode(start.x, start.y, m_bar_width, m_height);
             DrawCircleV({ start.x+radius, start.y+radius }, radius, m_color_bar);
         EndScissorMode();
 
-        if (m_x > m_width-radius) {
-            BeginScissorMode(start.x, start.y, m_x, m_height);
+        if (m_bar_width > m_width-radius) {
+            BeginScissorMode(start.x, start.y, m_bar_width, m_height);
                 DrawCircleV({ start.x+m_width-radius, start.y+radius }, radius, m_color_bar);
             EndScissorMode();
         }
 
-        if (m_x >= radius) {
+        if (m_bar_width >= radius) {
             BeginScissorMode(start.x+radius, start.y, m_width-radius*2, m_height);
-                DrawRectangleRec({ start.x+radius, start.y, m_x-radius, m_height }, m_color_bar);
+                DrawRectangleRec({ start.x+radius, start.y, m_bar_width-radius, m_height }, m_color_bar);
             EndScissorMode();
         }
-
-        Rectangle rect = { start.x, start.y, m_width, m_height };
-        DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, m_color_outline);
-
     }
+
+    [[nodiscard]] constexpr anim::Animation<Rectangle> init_rect() const {
+
+        Rectangle start = {
+            m_center.x - m_width/2,
+            m_center.y - m_height/2,
+            m_width,
+            m_height,
+        };
+
+        Rectangle end = { 0, 0, WIDTH, HEIGHT };
+
+        return anim::Interpolator<Rectangle> { start, end, 1, anim::interpolators::ease_in_out_quint };
+    }
+
+    [[nodiscard]] constexpr anim::Animation<Color> init_anim_color_end() const {
+        return anim::Interpolator<Color> { m_color_bar, m_color_end, 1, anim::interpolators::ease_in_out_quint };
+    }
+
 };
+
 
 int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
-    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 5, 100);
+    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 5, 100, BLUE, WHITE, BLACK);
     loading_bar.start();
 
     while (!WindowShouldClose()) {

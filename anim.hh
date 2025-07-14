@@ -60,6 +60,10 @@ namespace interpolators {
     return x == 0 ? 0 : x == 1 ? 1 : std::pow(2, -10 * x) * std::sin((x * 10 - 0.75) * c4) + 1;
 }
 
+[[nodiscard]] inline constexpr float ease_in_expo(float x) noexcept {
+    return x == 0 ? 0 : std::pow(2, 10 * x - 10);
+}
+
 }
 
 
@@ -102,6 +106,16 @@ template <>
 template <>
 [[nodiscard]] inline constexpr Color lerp(Color start, Color end, float x) {
     return ColorLerp(start, end, x);
+}
+
+template <>
+[[nodiscard]] inline constexpr Rectangle lerp(Rectangle start, Rectangle end, float x) {
+    return {
+        anim::lerp(start.x, end.x, x),
+        anim::lerp(start.y, end.y, x),
+        anim::lerp(start.width, end.width, x),
+        anim::lerp(start.height, end.height, x)
+    };
 }
 
 #endif // ANIM_INTEGRATION_RAYLIB
@@ -173,10 +187,10 @@ public:
     : m_interps(interps)
     { }
 
-    explicit Animation(Interpolator<T> interps) : m_interps { interps } { }
+    Animation(Interpolator<T> interp) : m_interps { interp } { }
 
     void add(Interpolator<T> interp) {
-        m_interps.push_bakc(interp);
+        m_interps.push_back(interp);
     }
 
     void start() override {
@@ -275,6 +289,8 @@ public:
     : m_anims(anims)
     { }
 
+    Batch(IAnimation& anim) : m_anims({ anim }) { }
+
     void add(IAnimation& anim) {
         m_anims.push_back(anim);
     }
@@ -354,6 +370,8 @@ public:
     Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
     : m_anims(anims)
     { }
+
+    Sequence(IAnimation& anim) : m_anims({ anim }) { }
 
     void add(IAnimation& anim) {
         m_anims.push_back(anim);
