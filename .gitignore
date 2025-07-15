@@ -1,5 +1,5 @@
 .cache
-./libanim/build
+libanim/build/
 
 # Prerequisites
 *.d
