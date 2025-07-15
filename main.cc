@@ -6,7 +6,7 @@
 #include <raymath.h>
 
 #define ANIM_INTEGRATION_RAYLIB
-#include "anim.hh"
+#include "libanim/anim.hh"
 
 
 
@@ -187,6 +187,9 @@ int main() {
 
             loading_bar.update();
             rot.update();
+
+            if (seq.is_done())
+                seq.start();
 
         }
         EndDrawing();

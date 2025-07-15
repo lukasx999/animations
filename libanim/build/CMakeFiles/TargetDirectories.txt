@@ -1,0 +1,4 @@
+/home/lukas/code/repos/animations/libanim/build/CMakeFiles/anim.dir
+/home/lukas/code/repos/animations/libanim/build/CMakeFiles/anim_dyn.dir
+/home/lukas/code/repos/animations/libanim/build/CMakeFiles/edit_cache.dir
+/home/lukas/code/repos/animations/libanim/build/CMakeFiles/rebuild_cache.dir
