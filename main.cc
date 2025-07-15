@@ -39,7 +39,7 @@ class LoadingBarAnimation : public anim::AnimationTemplate {
     const Color m_color_end;
 
     anim::Animation<Vector2> m_pos = init_pos();
-    anim::Animation<float> m_bar_width { { 0, m_width, 2, anim::interpolators::ease_in_expo } };
+    anim::Animation<float> m_bar_width { { 0, m_width, 2, anim::interpolators::ease_in_out_quint } };
     anim::Animation<float> m_roundness { { 1.0f, 0.0f, 1, anim::interpolators::ease_in_out_circ } };
     anim::Animation<Rectangle> m_rect = init_rect();
     anim::Animation<Color> m_anim_color_end = init_anim_color_end();
@@ -61,7 +61,7 @@ public:
 
     void on_update() override {
 
-        Vector2 start { m_pos->x - m_width/2.0f, m_pos->y-m_height/2 };
+        Vector2 start { m_pos->x - m_width/2, m_pos->y-m_height/2 };
 
         if (m_bar_width.is_running() || m_pos.is_running()) {
             draw_inner_bar(start);
