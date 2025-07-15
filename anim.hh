@@ -8,95 +8,12 @@
 #include <cmath>
 #include <numeric>
 
+#include "interpolators.hh"
+#include "batch.hh"
+#include "sequence.hh"
+#include "animation.hh"
+
 namespace anim {
-
-namespace interpolators {
-
-#define ANIM_IMPL_INTERP_FN(ident) \
-    [[nodiscard]] inline constexpr float ident(float x) noexcept
-
-ANIM_IMPL_INTERP_FN (step) {
-    (void) x;
-    return 1.0f;
-}
-
-ANIM_IMPL_INTERP_FN (linear) {
-    return x;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_quad) {
-    return std::pow(x, 2);
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_quad) {
-    return x < 0.5 ? 2 * x * x : 1 - std::pow(-2 * x + 2, 2) / 2;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_cubic) {
-    return std::pow(x, 3);
-}
-
-ANIM_IMPL_INTERP_FN (ease_out_expo) {
-    return x == 1 ? 1 : 1 - std::pow(2, -10 * x);
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_cubic) {
-    return x < 0.5 ? 4 * std::pow(x, 3) : 1 - std::pow(-2 * x + 2, 3) / 2;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_back) {
-    float c1 = 1.70158;
-    float c2 = c1 * 1.525;
-
-    return x < 0.5
-    ? (std::pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
-    : (std::pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_circ) {
-    return x < 0.5
-    ? (1 - std::sqrt(1 - std::pow(2 * x, 2))) / 2
-    : (std::sqrt(1 - std::pow(-2 * x + 2, 2)) + 1) / 2;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_quint) {
-    return x < 0.5 ? 16 * std::pow(x, 5) : 1 - std::pow(-2 * x + 2, 5) / 2;
-}
-
-ANIM_IMPL_INTERP_FN (ease_out_elastic) {
-    float c4 = (2 * M_PI) / 3;
-    return x == 0 ? 0 : x == 1 ? 1 : std::pow(2, -10 * x) * std::sin((x * 10 - 0.75) * c4) + 1;
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_expo) {
-    return x == 0 ? 0 : std::pow(2, 10 * x - 10);
-}
-
-ANIM_IMPL_INTERP_FN (ease_out_back) {
-    float c1 = 1.70158;
-    float c3 = c1 + 1;
-    return 1 + c3 * std::pow(x - 1, 3) + c1 * std::pow(x - 1, 2);
-}
-
-ANIM_IMPL_INTERP_FN (ease_in_out_expo) {
-    return x == 0 ? 0 : x == 1 ? 1
-    : x < 0.5 ? std::pow(2, 20 * x - 10) / 2
-    : (2 - std::pow(2, -20 * x + 10)) / 2;
-}
-
-}
-
-
-// TODO: pause/resume semantics?
-struct IAnimation {
-    virtual void start() = 0;
-    virtual void reset() = 0;
-    [[nodiscard]] virtual double get_duration() const = 0;
-    [[nodiscard]] virtual bool is_stopped() const = 0;
-    [[nodiscard]] virtual bool is_done() const = 0;
-    [[nodiscard]] virtual bool is_running() const = 0;
-    virtual ~IAnimation() = default;
-};
 
 
 
@@ -108,14 +25,6 @@ template <typename T> requires std::is_arithmetic_v<T>
 [[nodiscard]] inline constexpr T lerp(T start, T end, float x) {
     return start + x * (end - start);
 }
-
-// concept for a type that may be interpolated
-// custom types may be added via template specialization of anim::lerp()
-
-template <typename T>
-concept Interpolatable = requires (T start, T end, float x) {
-    lerp(start, end, x);
-};
 
 #ifdef ANIM_INTEGRATION_RAYLIB
 
@@ -140,6 +49,15 @@ template <>
 }
 
 #endif // ANIM_INTEGRATION_RAYLIB
+
+// concept for a type that may be interpolated
+// custom types may be added via template specialization of anim::lerp()
+
+template <typename T>
+concept Interpolatable = requires (T start, T end, float x) {
+    lerp(start, end, x);
+};
+
 
 // a transition between two values
 template <Interpolatable T>
@@ -303,164 +221,7 @@ private:
 
 
 
-// runs animations concurrently
-class Batch : public IAnimation {
-    std::vector<std::reference_wrapper<IAnimation>> m_anims;
-    using Iterator = decltype(m_anims)::iterator;
-    using ConstIterator = decltype(m_anims)::const_iterator;
 
-public:
-    Batch() = default;
-
-    Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
-    : m_anims(anims)
-    { }
-
-    Batch(IAnimation& anim) : m_anims({ anim }) { }
-
-    void add(IAnimation& anim) {
-        m_anims.push_back(anim);
-    }
-
-    template <Interpolatable T>
-    [[nodiscard]] Animation<T>& get(std::size_t idx) {
-        auto ptr = dynamic_cast<Animation<T>*>(&m_anims[idx].get());
-        assert(ptr != nullptr);
-        return *ptr;
-    }
-
-    void start() override {
-        for (auto& anim : m_anims)
-            anim.get().start();
-    }
-
-    void reset() override {
-        for (auto& anim : m_anims)
-            anim.get().reset();
-    }
-
-    [[nodiscard]] double get_duration() const override {
-        return get_longest().get().get_duration();
-    }
-
-    [[nodiscard]] bool is_stopped() const override {
-        return get_longest().get().is_stopped();
-    }
-
-    [[nodiscard]] bool is_done() const override {
-        return get_longest().get().is_done();
-    }
-
-    [[nodiscard]] bool is_running() const override {
-        return get_longest().get().is_running();
-    }
-
-    [[nodiscard]] Iterator begin() {
-        return m_anims.begin();
-    }
-
-    [[nodiscard]] Iterator end() {
-        return m_anims.end();
-    }
-
-    [[nodiscard]] ConstIterator cbegin() const {
-        return m_anims.cbegin();
-    }
-
-    [[nodiscard]] ConstIterator cend() const {
-        return m_anims.cend();
-    }
-
-private:
-    [[nodiscard]] std::reference_wrapper<IAnimation> const& get_longest() const {
-        auto max_fn = [](std::reference_wrapper<IAnimation> const& a, decltype(a) b) {
-            return b.get().get_duration() > a.get().get_duration();
-        };
-
-        auto longest = std::ranges::max_element(m_anims, max_fn);
-
-        assert(longest != m_anims.end());
-
-        return *longest;
-    }
-
-};
-
-// runs animations synchronously
-class Sequence : public IAnimation {
-    std::vector<std::reference_wrapper<IAnimation>> m_anims;
-    std::optional<decltype(m_anims)::iterator> m_current;
-
-public:
-    Sequence() = default;
-
-    Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
-    : m_anims(anims)
-    { }
-
-    Sequence(IAnimation& anim) : m_anims({ anim }) { }
-
-    void add(IAnimation& anim) {
-        m_anims.push_back(anim);
-    }
-
-    void dispatch() {
-        bool running = m_current.has_value();
-        if (!running) return;
-
-        auto& it = m_current.value();
-
-        if (it->get().is_done()) {
-            it++;
-
-            bool is_at_end = m_current == m_anims.end();
-            if (is_at_end) {
-                m_current = { };
-                return;
-            }
-
-            it->get().start();
-        }
-
-    }
-
-    void start() override {
-        reset();
-        m_anims.front().get().start();
-        m_current = m_anims.begin();
-    }
-
-    void reset() override {
-        for (auto& anim : m_anims)
-            anim.get().reset();
-        m_current = { };
-    }
-
-    [[nodiscard]] double get_duration() const override {
-        auto fn = [](double acc, std::reference_wrapper<IAnimation> const& elem) {
-            return acc + elem.get().get_duration();
-        };
-        double t = std::accumulate(m_anims.cbegin(), m_anims.cend(), 0.0f, fn);
-        return t;
-    }
-
-    [[nodiscard]] bool is_stopped() const override {
-        return m_anims.front().get().is_done();
-    }
-
-    [[nodiscard]] bool is_done() const override {
-        return m_anims.back().get().is_done();
-    }
-
-    [[nodiscard]] bool is_running() const override {
-        auto fn = [](std::reference_wrapper<IAnimation> const& elem) {
-            return elem.get().is_running();
-        };
-
-        return std::ranges::any_of(m_anims, fn);
-    }
-
-};
 
 
 
