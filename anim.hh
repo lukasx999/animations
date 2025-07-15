@@ -68,6 +68,18 @@ namespace interpolators {
     return x == 0 ? 0 : std::pow(2, 10 * x - 10);
 }
 
+[[nodiscard]] inline constexpr float ease_out_back(float x) noexcept {
+    float c1 = 1.70158;
+    float c3 = c1 + 1;
+    return 1 + c3 * std::pow(x - 1, 3) + c1 * std::pow(x - 1, 2);
+}
+
+[[nodiscard]] inline constexpr float ease_in_out_expo(float x) noexcept {
+    return x == 0 ? 0 : x == 1 ? 1
+    : x < 0.5 ? std::pow(2, 20 * x - 10) / 2
+    : (2 - std::pow(2, -20 * x + 10)) / 2;
+}
+
 }
 
 

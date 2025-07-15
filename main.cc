@@ -145,10 +145,11 @@ private:
         float y = HEIGHT/2.0f;
         Vector2 middle = {WIDTH/2.0f, y};
 
+        auto fn = anim::interpolators::ease_in_out_expo;
         return {
-            { {-m_square_size/2, y}, middle, 1, anim::interpolators::ease_in_out_quint },
+            { {-m_square_size/2, y}, middle, 1, fn },
             anim::Interpolator<Vector2>::wait(middle, 2),
-            { middle, {WIDTH+m_square_size/2, y}, 1, anim::interpolators::ease_in_out_quint },
+            { middle, {WIDTH+m_square_size/2, y}, 1, fn },
         };
     }
 
