@@ -38,8 +38,9 @@ class LoadingBarAnimation : public anim::AnimationTemplate {
     const Color m_color_outline;
     const Color m_color_end;
 
-    anim::Animation<float> m_bar_width { { 0, m_width, 1, anim::interpolators::ease_in_out_circ } };
-    anim::Animation<float> m_roundness { { 1.0f, 0.0f, 1, anim::interpolators::ease_in_expo } };
+    anim::Animation<Vector2> m_pos = init_pos();
+    anim::Animation<float> m_bar_width { { 0, m_width, 2, anim::interpolators::ease_in_expo } };
+    anim::Animation<float> m_roundness { { 1.0f, 0.0f, 1, anim::interpolators::ease_in_out_circ } };
     anim::Animation<Rectangle> m_rect = init_rect();
     anim::Animation<Color> m_anim_color_end = init_anim_color_end();
 
@@ -48,7 +49,7 @@ class LoadingBarAnimation : public anim::AnimationTemplate {
 public:
     LoadingBarAnimation(Vector2 center, float width, float thickness, float height,
                         Color color_bar, Color color_outline, Color color_end)
-        : anim::AnimationTemplate({ m_bar_width, m_box, m_anim_color_end })
+        : anim::AnimationTemplate({ m_pos, m_bar_width, m_box, m_anim_color_end })
         , m_center(center)
         , m_width(width)
         , m_thickness(thickness)
@@ -60,24 +61,23 @@ public:
 
     void on_update() override {
 
-        Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
+        Vector2 start { m_pos->x - m_width/2.0f, m_pos->y-m_height/2 };
 
-        if (m_bar_width.is_running()) {
-            draw_inner_bar();
+        if (m_bar_width.is_running() || m_pos.is_running()) {
+            draw_inner_bar(start);
             Rectangle rect = { start.x, start.y, m_width, m_height };
             DrawRectangleRoundedLinesEx(rect, 1, 0, m_thickness, m_color_outline);
         }
 
-        if (m_box.is_running()) {
+        if (m_box.is_running() || m_anim_color_end.is_running()) {
             DrawRectangleRounded(m_rect, m_roundness, 0, m_anim_color_end);
         }
 
     }
 
 private:
-    void draw_inner_bar() const {
+    void draw_inner_bar(Vector2 start) const {
 
-        Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
         float radius = m_height/2;
 
         BeginScissorMode(start.x, start.y, m_bar_width, m_height);
@@ -97,6 +97,12 @@ private:
         }
     }
 
+    [[nodiscard]] constexpr anim::Animation<Vector2> init_pos() const {
+        Vector2 start = { WIDTH/2.0f, -m_height/2.0f-m_thickness };
+        Vector2 end = { WIDTH/2.0f, HEIGHT/2.0f };
+        return anim::Interpolator<Vector2> { start, end, 1.0f, anim::interpolators::ease_in_out_cubic };
+    }
+
     [[nodiscard]] constexpr anim::Animation<Rectangle> init_rect() const {
 
         Rectangle start = {
@@ -112,7 +118,7 @@ private:
     }
 
     [[nodiscard]] constexpr anim::Animation<Color> init_anim_color_end() const {
-        return anim::Interpolator<Color> { m_color_bar, m_color_end, 1, anim::interpolators::ease_in_out_quad };
+        return anim::Interpolator<Color> { m_color_bar, m_color_end, 1, anim::interpolators::linear };
     }
 
 };
@@ -128,7 +134,12 @@ public:
     RotatingSquareAnimation() : anim::AnimationTemplate(m_batch) { }
 
     void on_update() override {
-        Rectangle rect = { m_pos.get().x, m_pos.get().y, m_square_size, m_square_size};
+        Rectangle rect = {
+            m_pos->x,
+            m_pos->y,
+            m_square_size,
+            m_square_size,
+        };
         DrawRectanglePro(rect, { rect.width/2, rect.height/2 }, m_rotation, BLUE);
     }
 
@@ -163,7 +174,7 @@ int main() {
     LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 10, 100, MAROON, ORANGE, BLACK);
     RotatingSquareAnimation rot;
 
-    anim::Sequence seq { rot, loading_bar };
+    anim::Sequence seq { loading_bar, rot };
 
     seq.start();
 

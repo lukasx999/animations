@@ -274,6 +274,12 @@ public:
         }
     }
 
+    T const* operator->() const {
+        static T x;
+        x = get();
+        return &x;
+    }
+
     operator T() const {
         return get();
     }
