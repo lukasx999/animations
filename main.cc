@@ -58,9 +58,7 @@ public:
         , m_color_end(color_end)
     { };
 
-    void draw() {
-
-        m_anim.dispatch();
+    void on_update() override {
 
         Vector2 start { m_center.x - m_width/2.0f, m_center.y-m_height/2 };
 
@@ -119,41 +117,51 @@ private:
 
 };
 
+class RotatingSquareAnimation : public anim::AnimationTemplate {
+    float m_square_size = 300;
+
+    anim::Animation<Vector2> m_pos = init_pos();
+    anim::Animation<float> m_rotation = init_rotation();
+    anim::Batch m_batch { m_pos, m_rotation };
+
+public:
+    RotatingSquareAnimation() : anim::AnimationTemplate(m_batch) { }
+
+    void on_update() override {
+        Rectangle rect = { m_pos.get().x, m_pos.get().y, m_square_size, m_square_size};
+        DrawRectanglePro(rect, { rect.width/2, rect.height/2 }, m_rotation, BLUE);
+    }
+
+private:
+    [[nodiscard]] constexpr anim::Animation<float> init_rotation() {
+        return {
+            anim::Interpolator<float>::wait(0, 1),
+            { 0, 180, 2, anim::interpolators::ease_in_out_back },
+            anim::Interpolator<float>::wait(0, 1),
+        };
+    }
+
+    [[nodiscard]] constexpr anim::Animation<Vector2> init_pos() {
+        float y = HEIGHT/2.0f;
+        Vector2 middle = {WIDTH/2.0f, y};
+
+        return {
+            { {-m_square_size/2, y}, middle, 1, anim::interpolators::ease_in_out_quint },
+            anim::Interpolator<Vector2>::wait(middle, 2),
+            { middle, {WIDTH+m_square_size/2, y}, 1, anim::interpolators::ease_in_out_quint },
+        };
+    }
+
+};
+
 int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
-    anim::Animation<float> a({ 0, 100, 2, anim::interpolators::linear });
-    anim::Animation<float> b({ 0, 100, 2, anim::interpolators::linear });
-    anim::Animation<float> c({ 0, 100, 2, anim::interpolators::linear });
-    anim::Sequence seq { a, b, c };
-    seq.start();
-
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        {
-            ClearBackground(BLACK);
-
-            seq.dispatch();
-
-        }
-        EndDrawing();
-    }
-
-    CloseWindow();
-
-    return EXIT_SUCCESS;
-}
-
-int main1() {
-
-    InitWindow(WIDTH, HEIGHT, "animations");
-    SetTargetFPS(180);
-
     LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 10, 100, MAROON, ORANGE, BLACK);
+    RotatingSquareAnimation rot;
 
-    anim::Animation<float> rot({ 0, 180, 2, anim::interpolators::ease_in_out_quad });
     anim::Sequence seq { rot, loading_bar };
 
     seq.start();
@@ -165,12 +173,8 @@ int main1() {
 
             seq.dispatch();
 
-            loading_bar.draw();
-
-            if (rot.is_running()) {
-                Rectangle rect = { WIDTH/2.0f, HEIGHT/2.0f, 300, 300};
-                DrawRectanglePro(rect, { rect.width/2, rect.height/2 }, rot, BLUE);
-            }
+            loading_bar.update();
+            rot.update();
 
         }
         EndDrawing();

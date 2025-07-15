@@ -12,6 +12,10 @@ namespace anim {
 
 namespace interpolators {
 
+[[nodiscard]] inline constexpr float step(float) noexcept {
+    return 1.0f;
+}
+
 [[nodiscard]] inline constexpr float linear(float x) noexcept {
     return x;
 }
@@ -161,6 +165,11 @@ public:
         , m_fn(fn)
     { }
 
+    // create a interpolator that holds the specified value for the given duration
+    [[nodiscard]] static constexpr Interpolator<T> wait(T value, double duration) {
+        return Interpolator(value, value, duration, interpolators::step);
+    }
+
     operator T() const {
         return get();
     }
@@ -175,11 +184,9 @@ public:
 // runs a list of interpolators synchronously
 template <Interpolatable T>
 class Animation : public IAnimation {
-    enum class State { Stopped, Running };
-
     std::vector<Interpolator<T>> m_interps;
     double m_start_time = 0.0f;
-    State m_state = State::Stopped;
+    bool m_is_active = false;
 
 public:
     Animation() = default;
@@ -195,12 +202,12 @@ public:
     }
 
     void start() override {
-        m_state = State::Running;
+        m_is_active = true;
         m_start_time = get_time_secs();
     }
 
     void reset() override {
-        m_state = State::Stopped;
+        m_is_active = false;
         m_start_time = 0.0f;
     }
 
@@ -214,15 +221,16 @@ public:
     }
 
     [[nodiscard]] bool is_stopped() const override {
-        return m_state == State::Stopped;
+        return !m_is_active;
     }
 
     [[nodiscard]] bool is_running() const override {
-        return m_state == State::Running;
+        if (is_done()) return false;
+        return m_is_active;
     }
 
     [[nodiscard]] bool is_done() const override {
-        if (is_stopped()) return false;
+        if (!m_is_active) return false;
         return get_time() >= get_duration();
     }
 
@@ -244,15 +252,13 @@ public:
     }
 
     [[nodiscard]] T get() const {
-        switch (m_state) {
-            case State::Running: {
-                if (is_done()) return m_interps.back().get_end();
-                double t = get_time();
-                return get(t);
-            }
+        if (m_is_active) {
+            if (is_done()) return m_interps.back().get_end();
+            double t = get_time();
+            return get(t);
 
-            case State::Stopped:
-                return m_interps.front().get_start();
+        } else {
+            return m_interps.front().get_start();
         }
     }
 
@@ -379,15 +385,6 @@ public:
     }
 
     void dispatch() {
-        // TODO: remove
-        for (auto& anim : m_anims) {
-            auto text = anim.get().is_running() ? "running" :
-                anim.get().is_done() ? "done" :
-                anim.get().is_stopped() ? "stopped" : "";
-            std::println("anim: {}, {}", anim.get().get_duration(), text);
-        }
-        std::println("---------------");
-
         bool running = m_current.has_value();
         if (!running) return;
 
@@ -452,8 +449,14 @@ protected:
     Sequence m_anim;
     AnimationTemplate() = default;
     AnimationTemplate(Sequence anim) : m_anim(anim) { }
+    virtual void on_update() { }
 
 public:
+    void update() {
+        m_anim.dispatch();
+        on_update();
+    }
+
     void start() override {
         m_anim.start();
     }
