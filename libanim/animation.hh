@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cassert>
 #include <vector>
 #include <chrono>
 #include <numeric>
 
 #include "common.hh"
+
+
 
 namespace anim {
 
@@ -62,7 +65,7 @@ public:
 
     [[nodiscard]] bool is_done() const override {
         if (!m_is_active) return false;
-        return get_time() >= get_duration();
+        return get_time() > get_duration();
     }
 
     [[nodiscard]] T get(float t) const {

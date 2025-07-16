@@ -1,0 +1,3 @@
+build:
+    cmake -GNinja -B build
+    cmake --build build

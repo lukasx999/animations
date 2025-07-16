@@ -10,8 +10,6 @@ namespace anim {
 // runs animations concurrently
 class Batch : public IAnimation {
     std::vector<std::reference_wrapper<IAnimation>> m_anims;
-    using Iterator = decltype(m_anims)::iterator;
-    using ConstIterator = decltype(m_anims)::const_iterator;
 
 public:
     Batch() = default;
@@ -54,22 +52,6 @@ public:
 
     [[nodiscard]] bool is_running() const override {
         return get_longest().get().is_running();
-    }
-
-    [[nodiscard]] Iterator begin() {
-        return m_anims.begin();
-    }
-
-    [[nodiscard]] Iterator end() {
-        return m_anims.end();
-    }
-
-    [[nodiscard]] ConstIterator cbegin() const {
-        return m_anims.cbegin();
-    }
-
-    [[nodiscard]] ConstIterator cend() const {
-        return m_anims.cend();
     }
 
 private:
