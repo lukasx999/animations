@@ -1,3 +1,4 @@
+#include <cassert>
 #include <numeric>
 #include <algorithm>
 
@@ -35,6 +36,27 @@ void Sequence::reset() {
     for (auto& anim : m_anims)
     anim.get().reset();
     m_current = { };
+}
+
+[[nodiscard]] double Sequence::get_progress() const {
+
+    double time_to_interp = 0.0f;
+
+    auto fn = [&](std::reference_wrapper<IAnimation> const& interp) {
+        time_to_interp += interp.get().get_duration();
+        return interp.get().is_running();
+    };
+
+    auto current = std::ranges::find_if(m_anims, fn);
+    assert(current != m_anims.end());
+
+    double duration = current->get().get_duration();
+    time_to_interp -= duration; // compensate overshoot
+
+    double t = current->get().get_progress() * duration;
+    double progress_abs = time_to_interp + t;
+
+    return progress_abs / get_duration();
 }
 
 [[nodiscard]] double Sequence::get_duration() const {

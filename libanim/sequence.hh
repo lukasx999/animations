@@ -28,6 +28,7 @@ public:
     void dispatch();
     void start() override;
     void reset() override;
+    [[nodiscard]] double get_progress() const override;
     [[nodiscard]] double get_duration() const override;
     [[nodiscard]] bool is_stopped() const override;
     [[nodiscard]] bool is_done() const override;

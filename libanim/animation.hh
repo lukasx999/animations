@@ -38,6 +38,10 @@ public:
         m_start_time = 0.0f;
     }
 
+    [[nodiscard]] double get_progress() const override {
+        return get_time() / get_duration();
+    }
+
     [[nodiscard]] double get_duration() const override {
 
         auto fn = [](double acc, anim::Interpolator<T> const& interp) {

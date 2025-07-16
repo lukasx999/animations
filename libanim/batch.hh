@@ -36,6 +36,10 @@ public:
             anim.get().reset();
     }
 
+    [[nodiscard]] double get_progress() const override {
+        return get_longest().get().get_progress();
+    }
+
     [[nodiscard]] double get_duration() const override {
         return get_longest().get().get_duration();
     }

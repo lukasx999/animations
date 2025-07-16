@@ -33,6 +33,10 @@ public:
         m_anim.reset();
     }
 
+    [[nodiscard]] double get_progress() const override {
+        return m_anim.get_progress();
+    }
+
     [[nodiscard]] double get_duration() const override {
         return m_anim.get_duration();
     }

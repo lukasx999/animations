@@ -110,6 +110,7 @@ public:
 struct IAnimation {
     virtual void start() = 0;
     virtual void reset() = 0;
+    [[nodiscard]] virtual double get_progress() const = 0; // 0..1
     [[nodiscard]] virtual double get_duration() const = 0;
     [[nodiscard]] virtual bool is_stopped() const = 0;
     [[nodiscard]] virtual bool is_done() const = 0;
