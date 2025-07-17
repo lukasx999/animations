@@ -268,7 +268,7 @@ public:
         auto width = m_count * spacing - spacing;
         auto offset = WIDTH/2.0f - width/2.0f;
 
-        size_t idx=0; // std::views::enumerate() not supported by em++
+        std::size_t idx = 0; // std::views::enumerate() not supported by em++
         for (auto &anim : m_circles) {
             float x0 = offset + spacing * idx;
 
