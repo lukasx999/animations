@@ -1,0 +1,2 @@
+-I../libanim/
+-std=c++23

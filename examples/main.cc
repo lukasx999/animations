@@ -6,7 +6,7 @@
 #include <raymath.h>
 
 #define ANIM_INTEGRATION_RAYLIB
-#include "libanim/anim.hh"
+#include "anim.hh"
 
 
 
