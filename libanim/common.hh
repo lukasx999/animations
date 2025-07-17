@@ -56,24 +56,12 @@ template <Interpolatable T>
 class Interpolator {
     using InterpFn = std::function<float(float)>;
 
-    const InterpFn m_fn;
     const T m_start;
     const T m_end;
     const double m_duration;
+    const InterpFn m_fn;
 
 public:
-    [[nodiscard]] T get_start() const {
-        return m_start;
-    }
-
-    [[nodiscard]] T get_end() const {
-        return m_end;
-    }
-
-    [[nodiscard]] double get_duration() const {
-        return m_duration;
-    }
-
     Interpolator() : Interpolator(1.0f) { }
     explicit Interpolator(T end) : Interpolator(0.0f, end) { }
     Interpolator(T start, T end) : Interpolator(start, end, 1.0f) { }
@@ -92,6 +80,18 @@ public:
     // create an interpolator that maintains the specified value for the given duration
     [[nodiscard]] static constexpr Interpolator<T> wait(T value, double duration) {
         return Interpolator(value, value, duration, interpolators::step);
+    }
+
+    [[nodiscard]] T get_start() const {
+        return m_start;
+    }
+
+    [[nodiscard]] T get_end() const {
+        return m_end;
+    }
+
+    [[nodiscard]] double get_duration() const {
+        return m_duration;
     }
 
     operator T() const {

@@ -20,12 +20,20 @@ function build_library {
     cmake --build ../libanim/build
 }
 
+anim=../libanim
+cflags="-Wall -Wextra -std=c++23 -pedantic -O3"
+libs="-I$anim -L$anim/build -lanim -lraylib"
+
 function build_web {
-    em++ main.cc -I../libanim/ -std=c++23 -o ../docs/index.html -I./raylib/src ./raylib/src/libraylib.web.a -s USE_GLFW=3 -s ASYNCIFY --shell-file ./raylib/src/minshell.html ../libanim/build/libanim.a
+    raylib=./raylib-5.5_webassembly/
+    em++ main.cc $cflags $libs \
+    -o ../docs/index.html \
+    -I$raylib/include -L$raylib/lib \
+    -s USE_GLFW=3 -s ASYNCIFY --shell-file ./minshell.html
 }
 
 function build_native {
-    clang++ main.cc -I../libanim/ -L../libanim/build/ -lanim -std=c++23 -lraylib -ggdb -o example
+    clang++ main.cc $cflags $libs -o example
     ./example
     rm ./example
 }
