@@ -226,6 +226,7 @@ public:
 
 };
 
+
 class BouncingCirclesAnimation : public anim::AnimationTemplate {
     const int m_count;
     const float m_radius;
@@ -268,7 +269,7 @@ public:
         auto width = m_count * spacing - spacing;
         auto offset = WIDTH/2.0f - width/2.0f;
 
-        std::size_t idx = 0; // std::views::enumerate() not supported by em++
+        std::size_t idx = 0; // std::views::enumerate() not supported by emscripten em++ :(
         for (auto &anim : m_circles) {
             float x0 = offset + spacing * idx;
 
