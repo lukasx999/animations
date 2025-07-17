@@ -226,71 +226,72 @@ public:
 
 };
 
-// class BouncingCirclesAnimation : public anim::AnimationTemplate {
-//     const int m_count;
-//     const float m_radius;
-//     const float m_offset = 100;
-//     const float m_start = HEIGHT/2.0f - m_offset;
-//     const float m_end = HEIGHT/2.0f + m_offset;
-//
-//     std::vector<anim::Animation<float>> m_circles;
-//     anim::Batch m_batch;
-//
-// public:
-//     BouncingCirclesAnimation(int count, int radius)
-//         : anim::AnimationTemplate(m_batch)
-//         , m_count(count)
-//         , m_radius(radius)
-//     {
-//         assert(m_count % 2 != 0 && "count must be odd");
-//
-//         for (double i=1; i <= m_count; ++i) {
-//
-//             double duration = i < m_count/2.0f ? i : m_count-i+1;
-//             auto &anim = m_circles.emplace_back(anim::Animation<float> {
-//                 { m_start, m_end, duration/2.0f, anim::interpolators::ease_in_out_back },
-//             });
-//
-//             anim.start();
-//         }
-//
-//         for (auto& anim : m_circles)
-//             m_batch.add(anim);
-//
-//         m_batch.start();
-//     }
-//
-//     void on_update() override {
-//
-//         if (!m_anim.is_running()) return;
-//
-//         float spacing = 100;
-//         auto width = m_count * spacing - spacing;
-//         auto offset = WIDTH/2.0f - width/2.0f;
-//
-//         for (auto &&[idx, anim] : std::views::enumerate(m_circles)) {
-//             float x0 = offset + spacing * idx;
-//
-//             DrawLineEx({x0, m_start}, {x0, m_end}, 5, GRAY);
-//             DrawCircleV({x0, anim}, m_radius, BLUE);
-//
-//         }
-//     }
-//
-// };
+class BouncingCirclesAnimation : public anim::AnimationTemplate {
+    const int m_count;
+    const float m_radius;
+    const float m_offset = 100;
+    const float m_start = HEIGHT/2.0f - m_offset;
+    const float m_end = HEIGHT/2.0f + m_offset;
+
+    std::vector<anim::Animation<float>> m_circles;
+    anim::Batch m_batch;
+
+public:
+    BouncingCirclesAnimation(int count, int radius)
+        : anim::AnimationTemplate(m_batch)
+        , m_count(count)
+        , m_radius(radius)
+    {
+        assert(m_count % 2 != 0 && "count must be odd");
+
+        for (double i=1; i <= m_count; ++i) {
+
+            double duration = i < m_count/2.0f ? i : m_count-i+1;
+            auto &anim = m_circles.emplace_back(anim::Animation<float> {
+                { m_start, m_end, duration/2.0f, anim::interpolators::ease_in_out_back },
+            });
+
+            anim.start();
+        }
+
+        for (auto& anim : m_circles)
+            m_batch.add(anim);
+
+        m_batch.start();
+    }
+
+    void on_update() override {
+
+        if (!m_anim.is_running()) return;
+
+        float spacing = 100;
+        auto width = m_count * spacing - spacing;
+        auto offset = WIDTH/2.0f - width/2.0f;
+
+        size_t idx=0; // std::views::enumerate() not supported by em++
+        for (auto &anim : m_circles) {
+            float x0 = offset + spacing * idx;
+
+            DrawLineEx({x0, m_start}, {x0, m_end}, 5, GRAY);
+            DrawCircleV({x0, anim}, m_radius, BLUE);
+            idx++;
+
+        }
+    }
+
+};
 
 int main() {
 
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
-    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 20, 100, DARKGRAY, BLUE, BLACK);
+    LoadingBarAnimation loading_bar({ WIDTH/2.0f, HEIGHT/2.0f }, 500, 20, 100, DARKBLUE, BLUE, BLACK);
     RotatingSquareAnimation rot;
     SquareCircleLineAnimation scl;
-    // BouncingCirclesAnimation bc(9, 25);
+    BouncingCirclesAnimation bc(9, 25);
 
-    // anim::Sequence seq { loading_bar, bc, scl, rot };
-    anim::Sequence seq { loading_bar, scl, rot };
+    anim::Sequence seq { loading_bar, bc, scl, rot };
     seq.start();
 
     while (!WindowShouldClose()) {
@@ -303,7 +304,7 @@ int main() {
         loading_bar.update();
         rot.update();
         scl.update();
-        // bc.update();
+        bc.update();
 
         if (seq.is_done())
             seq.start();
