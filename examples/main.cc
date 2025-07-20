@@ -12,8 +12,6 @@
 
 
 
-#define PRINT(x) std::println("{}: {}", #x, x);
-
 static constexpr int WIDTH = 1600;
 static constexpr int HEIGHT = 900;
 
