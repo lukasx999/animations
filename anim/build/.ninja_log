@@ -1,0 +1,4 @@
+# ninja log v6
+1	292	1753052096561505911	CMakeFiles/anim.dir/batch.cc.o	57920cae8b205668
+0	315	1753052096560505867	CMakeFiles/anim.dir/sequence.cc.o	b0b9686aea760e69
+315	338	1753052096875519917	libanim.a	e800dca187aa526d

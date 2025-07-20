@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/lukas/code/repos/animations/anim/build",
+  "command": "/usr/bin/c++ -Wall -Wextra -O3 -std=c++23 -pedantic -std=gnu++23 -o CMakeFiles/anim.dir/sequence.cc.o -c /home/lukas/code/repos/animations/anim/sequence.cc",
+  "file": "/home/lukas/code/repos/animations/anim/sequence.cc",
+  "output": "CMakeFiles/anim.dir/sequence.cc.o"
+},
+{
+  "directory": "/home/lukas/code/repos/animations/anim/build",
+  "command": "/usr/bin/c++ -Wall -Wextra -O3 -std=c++23 -pedantic -std=gnu++23 -o CMakeFiles/anim.dir/batch.cc.o -c /home/lukas/code/repos/animations/anim/batch.cc",
+  "file": "/home/lukas/code/repos/animations/anim/batch.cc",
+  "output": "CMakeFiles/anim.dir/batch.cc.o"
+}
+]

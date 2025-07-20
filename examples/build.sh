@@ -7,24 +7,24 @@ if [[ $# != 1 ]]; then
 fi
 
 build_type=$1
+anim=../anim
+cflags="-Wall -Wextra -std=c++23 -pedantic -O3"
+libs="-I$anim -L$anim/build -lanim -lraylib"
 
-function build_library {
+build_library() {
     build_type=$1
     web=""
 
     if [[ $build_type == "web" ]]; then
-        web=-DWEB=ON
+        web=-DCMAKE_CXX_COMPILER=em++
     fi
 
-    cmake --fresh -GNinja -B ../libanim/build -S ../libanim $web
-    cmake --build ../libanim/build
+    cmake --fresh -GNinja -B $anim/build -S $anim $web
+    cmake --build $anim/build
 }
 
-anim=../libanim
-cflags="-Wall -Wextra -std=c++23 -pedantic -O3"
-libs="-I$anim -L$anim/build -lanim -lraylib"
-
-function build_web {
+build_web() {
+    mkdir -p ../docs
     raylib=./raylib-5.5_webassembly/
     em++ main.cc $cflags $libs \
     -o ../docs/index.html \
@@ -32,7 +32,7 @@ function build_web {
     -s USE_GLFW=3 -s ASYNCIFY --shell-file ./minshell.html
 }
 
-function build_native {
+build_native() {
     clang++ main.cc $cflags $libs -o example
     ./example
     rm ./example

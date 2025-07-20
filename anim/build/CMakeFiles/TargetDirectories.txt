@@ -1,0 +1,3 @@
+/home/lukas/code/repos/animations/anim/build/CMakeFiles/anim.dir
+/home/lukas/code/repos/animations/anim/build/CMakeFiles/edit_cache.dir
+/home/lukas/code/repos/animations/anim/build/CMakeFiles/rebuild_cache.dir
