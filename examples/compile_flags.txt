@@ -1,4 +1,4 @@
--I../libanim/
+-I../anim/
 -std=c++23
 -Wall
 -Wextra
