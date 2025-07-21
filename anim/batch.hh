@@ -13,17 +13,10 @@ class Batch : public IAnimation {
 
 public:
     Batch() = default;
+    Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims);
+    Batch(IAnimation& anim);
 
-    Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
-    : m_anims(anims)
-    { }
-
-    Batch(IAnimation& anim) : m_anims({ anim }) { }
-
-    void add(IAnimation& anim) {
-        m_anims.push_back(anim);
-    }
-
+    void add(IAnimation& anim);
     void start() override;
     void reset() override;
     [[nodiscard]] double get_progress() const override;

@@ -8,14 +8,10 @@
 #define ANIM_INTEGRATION_RAYLIB
 #include "anim.hh"
 
-
-
-
-
 static constexpr int WIDTH = 1600;
 static constexpr int HEIGHT = 900;
 
-
+[[maybe_unused]]
 static void draw_text_centered(Vector2 center, char const* text, float fontsize) {
     float textsize = MeasureText(text, fontsize);
     DrawText(text, center.x-textsize/2, center.y-fontsize/2, fontsize, WHITE);

@@ -14,17 +14,10 @@ class Sequence : public IAnimation {
 
 public:
     Sequence() = default;
+    Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims);
+    Sequence(IAnimation& anim);
 
-    Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
-    : m_anims(anims)
-    { }
-
-    Sequence(IAnimation& anim) : m_anims({ anim }) { }
-
-    void add(IAnimation& anim) {
-        m_anims.push_back(anim);
-    }
-
+    void add(IAnimation& anim);
     void dispatch();
     void start() override;
     void reset() override;

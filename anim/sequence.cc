@@ -6,6 +6,19 @@
 
 namespace anim {
 
+
+Sequence::Sequence(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
+: m_anims(anims)
+{ }
+
+Sequence::Sequence(IAnimation& anim)
+: m_anims({ anim })
+{ }
+
+void Sequence::add(IAnimation& anim) {
+    m_anims.push_back(anim);
+}
+
 void Sequence::dispatch() {
     bool running = m_current.has_value();
     if (!running) return;

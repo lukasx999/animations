@@ -5,14 +5,24 @@
 namespace anim {
 
 
+Batch::Batch(std::initializer_list<std::reference_wrapper<IAnimation>> anims)
+: m_anims(anims)
+{ }
+
+Batch::Batch(IAnimation& anim) : m_anims({ anim }) { }
+
+void Batch::add(IAnimation& anim) {
+    m_anims.push_back(anim);
+}
+
 void Batch::start() {
     for (auto& anim : m_anims)
-    anim.get().start();
+        anim.get().start();
 }
 
 void Batch::reset() {
     for (auto& anim : m_anims)
-    anim.get().reset();
+        anim.get().reset();
 }
 
 [[nodiscard]] double Batch::get_progress() const {
