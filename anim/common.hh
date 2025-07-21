@@ -105,7 +105,6 @@ public:
 
 };
 
-
 // TODO: pause/resume semantics?
 struct IAnimation {
     virtual void start() = 0;

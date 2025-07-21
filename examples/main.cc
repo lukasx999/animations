@@ -278,6 +278,7 @@ public:
 
 int main() {
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(WIDTH, HEIGHT, "animations");
     SetTargetFPS(180);
 
